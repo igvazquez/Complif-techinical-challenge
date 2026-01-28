@@ -1,0 +1,677 @@
+# Real-Time Rules Engine - Architecture & Implementation Plan
+
+## Executive Summary
+
+Build a configurable rules engine for detecting suspicious transactions in real-time using NestJS, PostgreSQL, Redis, and RabbitMQ. The system evaluates transactions against dynamically defined rules and generates alerts when conditions are met.
+
+---
+
+## Architectural Decisions Record (ADR)
+
+### ADR-001: Multi-Tenancy Strategy
+**Decision:** Shared schema with `id_organization` column
+**Rationale:**
+- Simplest to implement and maintain
+- Single database, all tenants share tables, filtered by organization ID
+- Adequate isolation for B2B SaaS compliance platform
+- Easy to add indexes for organization-scoped queries
+
+### ADR-002: Aggregation Strategy (Time Windows)
+**Decision:** PostgreSQL with optimized indexes (MVP), Redis as future enhancement
+**Rationale:**
+- Start simple - well-indexed queries can meet <100ms for moderate volumes
+- Avoid Redis complexity: memory growth (130M+ refs for 30 days at 50 tx/sec), window change invalidation
+- Document Redis upgrade path for when PostgreSQL becomes bottleneck
+- Composite indexes on `(id_organization, id_account, datetime)` + table partitioning by date
+
+**Future Redis path:** If PostgreSQL aggregations exceed 50ms p99, implement:
+- Redis sorted sets for recent data (configurable retention)
+- PostgreSQL fallback for windows exceeding Redis retention
+
+### ADR-003: Maximum Time Window
+**Decision:** 30 days
+**Rationale:**
+- Not specified in requirements, 30 days covers monthly patterns
+- Manageable data volume for PostgreSQL aggregations
+- Sufficient for most velocity/frequency compliance rules
+
+### ADR-004: Transaction Evaluation Flow
+**Decision:** Synchronous evaluation
+**Rationale:**
+- Meets <100ms requirement
+- Can block transactions immediately when rules trigger
+- Simpler implementation and debugging
+- Queue listener (RabbitMQ) added for batch/async processing
+
+### ADR-005: Alert Deduplication
+**Decision:** Increment counter on existing alert
+**Rationale:**
+- First match creates alert with `hit_count: 1`
+- Subsequent matches within window: increment `hit_count`, update `last_triggered_at`
+- Single alert per (rule + entity + window) - reduces noise for analysts
+- Full audit trail via `hit_count` and timestamps
+
+### ADR-006: Rule Template Inheritance
+**Decision:** Partial override with merge
+**Rationale:**
+- Organizations override specific fields, inherit rest from base template
+- Base template updates propagate to non-overridden fields
+- Balances customization flexibility with maintainability
+- Requires tracking which fields are overridden (stored in JSON)
+
+### ADR-007: Alert Actions
+**Decision:** DB persistence only (MVP), interfaces for webhook/queue/block
+**Rationale:**
+- Focus on core rule engine first
+- Define clean interfaces (`AlertActionHandler`) for all action types
+- Implement DB persistence fully
+- Other actions as stubs ready for implementation
+
+### ADR-008: Rule Cache
+**Decision:** Redis cache for compiled rules
+**Rationale:**
+- Challenge document recommends Redis
+- Supports multiple Node.js instances (horizontal scaling)
+- Cache invalidation via pub/sub when rules change
+- TTL-based expiration as safety net
+
+### ADR-009: Message Queue
+**Decision:** RabbitMQ with abstraction layer
+**Rationale:**
+- 50 tx/sec requirement well within RabbitMQ capacity
+- Simpler Docker Compose setup (single container vs Kafka's complexity)
+- Excellent NestJS integration (@nestjs/microservices)
+- Abstract via `MessageConsumer` interface for future Kafka swap
+
+### ADR-010: Failure Mode
+**Decision:** Fail open - allow transaction, log error
+**Rationale:**
+- Most transactions are legitimate (high legitimate-to-fraudulent ratio)
+- System errors blocking all transactions = major business disruption
+- Risk of missing few suspicious transactions during brief outage < cost of blocking legitimate business
+- Comprehensive error logging enables post-incident review
+
+### ADR-011: Behavior Rule Type
+**Decision:** Stub with interface only
+**Rationale:**
+- Behavioral analysis is complex (ML territory)
+- Define interface for future implementation
+- Other rule types (Quantity, Amount, Velocity, Geolocation, Lists) fully implemented
+
+---
+
+## Technology Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Framework | NestJS + TypeScript | API and business logic |
+| Database | PostgreSQL | Rules, alerts, transactions persistence |
+| Cache | Redis | Rule caching, pub/sub for invalidation |
+| Queue | RabbitMQ | Async transaction processing |
+| ORM | TypeORM | Database access with migrations |
+| Validation | class-validator, JSON Schema (ajv) | Input and rule config validation |
+| Rules Engine | json-rules-engine | Base rule evaluation (extended) |
+| Logging | Pino (nestjs-pino) | Structured JSON logging |
+| Metrics | @willsoto/nestjs-prometheus | Prometheus metrics endpoint |
+| API Docs | @nestjs/swagger | OpenAPI spec generation |
+| Testing | Jest | Unit and integration tests |
+| Containerization | Docker + Docker Compose | Local development stack |
+
+---
+
+## Project Structure
+
+```
+src/
+├── app.module.ts
+├── main.ts
+├── common/                      # Shared utilities
+│   ├── decorators/
+│   ├── filters/
+│   ├── guards/
+│   ├── interceptors/
+│   └── interfaces/
+├── config/                      # Configuration module
+│   ├── config.module.ts
+│   ├── configuration.ts
+│   └── validation.schema.ts
+├── database/                    # Database configuration
+│   ├── database.module.ts
+│   └── migrations/
+├── organizations/               # Multi-tenant organizations
+│   ├── organizations.module.ts
+│   ├── organizations.controller.ts
+│   ├── organizations.service.ts
+│   └── entities/
+│       └── organization.entity.ts
+├── rules/                       # Rule management
+│   ├── rules.module.ts
+│   ├── rules.controller.ts
+│   ├── rules.service.ts
+│   ├── rule-cache.service.ts
+│   ├── entities/
+│   │   └── rule.entity.ts
+│   ├── dto/
+│   │   ├── create-rule.dto.ts
+│   │   └── update-rule.dto.ts
+│   └── schemas/
+│       └── rule-config.schema.json
+├── templates/                   # Rule templates
+│   ├── templates.module.ts
+│   ├── templates.controller.ts
+│   ├── templates.service.ts
+│   ├── entities/
+│   │   ├── template.entity.ts
+│   │   └── template-override.entity.ts
+│   └── dto/
+├── engine/                      # Rule evaluation engine
+│   ├── engine.module.ts
+│   ├── engine.service.ts
+│   ├── operators/               # Custom operators
+│   │   ├── aggregation.operator.ts
+│   │   ├── list.operator.ts
+│   │   ├── geolocation.operator.ts
+│   │   └── velocity.operator.ts
+│   ├── facts/                   # Custom fact providers
+│   │   ├── transaction-history.fact.ts
+│   │   ├── account.fact.ts
+│   │   └── blacklist.fact.ts
+│   └── interfaces/
+│       └── rule-context.interface.ts
+├── transactions/                # Transaction processing
+│   ├── transactions.module.ts
+│   ├── transactions.controller.ts
+│   ├── transactions.service.ts
+│   ├── transaction-consumer.service.ts  # RabbitMQ consumer
+│   ├── entities/
+│   │   └── transaction.entity.ts
+│   └── dto/
+├── alerts/                      # Alert management
+│   ├── alerts.module.ts
+│   ├── alerts.controller.ts
+│   ├── alerts.service.ts
+│   ├── actions/                 # Action handlers
+│   │   ├── action-handler.interface.ts
+│   │   ├── db-action.handler.ts
+│   │   ├── webhook-action.handler.ts  # Stub
+│   │   ├── queue-action.handler.ts    # Stub
+│   │   └── block-action.handler.ts    # Stub
+│   ├── entities/
+│   │   └── alert.entity.ts
+│   └── dto/
+├── lists/                       # Blacklist/Whitelist management
+│   ├── lists.module.ts
+│   ├── lists.controller.ts
+│   ├── lists.service.ts
+│   └── entities/
+│       └── list-entry.entity.ts
+└── health/                      # Health checks
+    ├── health.module.ts
+    └── health.controller.ts
+
+test/
+├── unit/
+├── integration/
+└── fixtures/
+```
+
+---
+
+## Database Schema
+
+### Core Entities
+
+```sql
+-- Organizations (multi-tenant)
+CREATE TABLE organizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Rule Templates (base templates)
+CREATE TABLE rule_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    config JSONB NOT NULL,  -- Full rule configuration
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(name, version)
+);
+
+-- Template Overrides (org-specific customizations)
+CREATE TABLE template_overrides (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_organization UUID NOT NULL REFERENCES organizations(id),
+    id_template UUID NOT NULL REFERENCES rule_templates(id),
+    overrides JSONB NOT NULL,  -- Only overridden fields
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(id_organization, id_template)
+);
+
+-- Rules (active rules per organization)
+CREATE TABLE rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_organization UUID NOT NULL REFERENCES organizations(id),
+    id_template UUID REFERENCES rule_templates(id),  -- NULL if standalone
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    enabled BOOLEAN DEFAULT TRUE,
+    priority INTEGER DEFAULT 0,
+    config JSONB NOT NULL,  -- Full rule configuration
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    created_by UUID,
+    INDEX idx_rules_org_enabled (id_organization, enabled)
+);
+
+-- Alerts
+CREATE TABLE alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_organization UUID NOT NULL REFERENCES organizations(id),
+    id_rule UUID NOT NULL REFERENCES rules(id),
+    id_transaction UUID NOT NULL,
+    id_account UUID,
+    severity VARCHAR(20) NOT NULL,  -- LOW, MEDIUM, HIGH, CRITICAL
+    category VARCHAR(50) NOT NULL,  -- AML, FRAUD, COMPLIANCE, etc.
+    status VARCHAR(20) DEFAULT 'OPEN',  -- OPEN, ACKNOWLEDGED, RESOLVED, FALSE_POSITIVE
+    hit_count INTEGER DEFAULT 1,
+    first_triggered_at TIMESTAMP DEFAULT NOW(),
+    last_triggered_at TIMESTAMP DEFAULT NOW(),
+    dedup_key VARCHAR(255) NOT NULL,  -- rule_id:entity_id:window_key
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    INDEX idx_alerts_org_status (id_organization, status),
+    INDEX idx_alerts_dedup (dedup_key, first_triggered_at)
+);
+
+-- Transactions (for aggregation queries)
+CREATE TABLE transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_organization VARCHAR(50) NOT NULL,
+    id_account UUID NOT NULL,
+    amount DECIMAL(20, 4) NOT NULL,
+    amount_normalized DECIMAL(20, 4) NOT NULL,
+    currency VARCHAR(3),
+    type VARCHAR(20) NOT NULL,  -- CASH_IN, CASH_OUT, DEBIT, CREDIT
+    sub_type VARCHAR(50),
+    datetime TIMESTAMP NOT NULL,
+    date DATE NOT NULL,
+    is_voided BOOLEAN DEFAULT FALSE,
+    is_blocked BOOLEAN DEFAULT FALSE,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    origin VARCHAR(50),
+    device_info JSONB,
+    data JSONB,
+    external_code VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    INDEX idx_tx_org_account_datetime (id_organization, id_account, datetime),
+    INDEX idx_tx_org_datetime (id_organization, datetime)
+) PARTITION BY RANGE (date);
+
+-- Monthly partitions for transactions
+CREATE TABLE transactions_y2025m01 PARTITION OF transactions
+    FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
+-- ... additional partitions
+
+-- Blacklists/Whitelists
+CREATE TABLE list_entries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_organization UUID NOT NULL REFERENCES organizations(id),
+    list_type VARCHAR(20) NOT NULL,  -- BLACKLIST, WHITELIST
+    entity_type VARCHAR(50) NOT NULL,  -- ACCOUNT, IP, COUNTRY, etc.
+    entity_value VARCHAR(255) NOT NULL,
+    reason TEXT,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    created_by UUID,
+    INDEX idx_list_org_type (id_organization, list_type, entity_type)
+);
+```
+
+---
+
+## Rule Types Implementation
+
+### 1. Quantity Rules
+Count transactions in time window.
+
+```json
+{
+  "fact": "transaction.count",
+  "operator": "greaterThan",
+  "value": 10,
+  "params": {
+    "timeWindow": "24h",
+    "groupBy": "account"
+  }
+}
+```
+
+### 2. Amount Rules
+Individual or accumulated amount thresholds.
+
+```json
+{
+  "any": [
+    {
+      "fact": "transaction.amount",
+      "operator": "greaterThan",
+      "value": 10000
+    },
+    {
+      "fact": "transaction.sum",
+      "operator": "greaterThan",
+      "value": 50000,
+      "params": {
+        "timeWindow": "7d",
+        "groupBy": "account"
+      }
+    }
+  ]
+}
+```
+
+### 3. Velocity Rules
+Transactions per time unit.
+
+```json
+{
+  "fact": "transaction.velocity",
+  "operator": "greaterThan",
+  "value": 5,
+  "params": {
+    "timeWindow": "1h",
+    "groupBy": "account"
+  }
+}
+```
+
+### 4. Geolocation Rules
+IP, country, region checks.
+
+```json
+{
+  "any": [
+    {
+      "fact": "transaction.country",
+      "operator": "notIn",
+      "value": ["AR", "UY", "CL"]
+    },
+    {
+      "fact": "device.ip_country",
+      "operator": "in",
+      "value": ["$HIGH_RISK_COUNTRIES"]  // Reference to list
+    }
+  ]
+}
+```
+
+### 5. List Rules
+Blacklist/Whitelist checks.
+
+```json
+{
+  "fact": "account.id",
+  "operator": "inBlacklist",
+  "params": {
+    "listType": "BLACKLIST",
+    "entityType": "ACCOUNT"
+  }
+}
+```
+
+### 6. Behavior Rules (Stub)
+Interface defined, implementation deferred.
+
+```typescript
+interface BehaviorFactProvider {
+  getDeviationFromHistorical(
+    accountId: string,
+    metric: 'amount' | 'frequency',
+    timeWindow: string
+  ): Promise<number>;
+}
+```
+
+---
+
+## API Endpoints
+
+### Rules Management
+```
+POST   /api/rules                       Create rule
+GET    /api/rules                       List rules (org-scoped)
+GET    /api/rules/:id                   Get rule by ID
+PUT    /api/rules/:id                   Update rule (full replace)
+PATCH  /api/rules/:id                   Partial update (enabled, priority, etc.)
+DELETE /api/rules/:id                   Delete rule
+```
+
+### Templates Management
+```
+POST   /api/templates                   Create template
+GET    /api/templates                   List templates
+GET    /api/templates/:id               Get template
+PUT    /api/templates/:id               Update template (creates new version)
+GET    /api/templates/:id/versions      List template versions
+POST   /api/templates/:id/overrides     Create org override
+PUT    /api/templates/:id/overrides     Update org override
+DELETE /api/templates/:id/overrides     Remove org override
+```
+
+### Transaction Evaluation
+```
+POST   /api/transactions                Evaluate transaction against rules
+GET    /api/transactions/:id            Get transaction by ID
+```
+
+### Alerts
+```
+GET    /api/alerts                      List alerts (filterable)
+GET    /api/alerts/:id                  Get alert details
+PATCH  /api/alerts/:id                  Update alert (status, notes, etc.)
+```
+
+### Lists (Blacklist/Whitelist)
+```
+POST   /api/lists                       Add entry to list
+GET    /api/lists                       List entries (filterable)
+GET    /api/lists/:id                   Get entry by ID
+DELETE /api/lists/:id                   Remove entry
+```
+
+### Health & Metrics
+```
+GET    /health                          Health check
+GET    /metrics                         Prometheus metrics
+```
+
+---
+
+## Implementation Phases
+
+> **Testing Policy:** Every service, controller, and non-trivial module must have its corresponding test file created alongside it. Tests are written as part of each phase, not as a separate phase. Target: >80% coverage throughout.
+
+> **Documentation Policy:** Documentation grows incrementally with each phase. README.md, ARCHITECTURE.md, and CLAUDE.md are created in Phase 1 and updated as features are added. OpenAPI docs auto-generate from code decorators.
+
+### Phase 1: Project Setup & Core Infrastructure ✅ COMPLETED
+1. ✅ Initialize NestJS project with TypeScript
+2. ✅ Configure ESLint + Prettier
+3. ✅ Set up Docker Compose (PostgreSQL, Redis, RabbitMQ)
+4. ✅ Configure TypeORM with migrations
+5. ✅ Set up Pino logging
+6. ✅ Set up Prometheus metrics
+7. ✅ Configure environment variables and validation
+8. ✅ Create health check endpoint
+9. ✅ **Docs:** Create initial README.md, ARCHITECTURE.md, CLAUDE.md
+
+**Tests:** ✅ Health endpoint unit test, config validation
+
+### Phase 2: Core Entities & Multi-Tenancy
+1. Implement Organization module (CRUD)
+2. Create base entity with id_organization
+3. Implement organization-scoped guards/interceptors
+4. Set up database indexes
+
+**Tests:** Organization service unit tests, controller integration tests
+**Docs:** Update README with organization setup, update CLAUDE.md with module patterns
+
+### Phase 3: Rule Templates & Rules
+1. Implement Rule Template module
+   - CRUD operations
+   - Version management
+   - Template override logic (partial merge)
+2. Implement Rules module
+   - CRUD operations
+   - JSON Schema validation for rule config
+   - Rule priority ordering
+
+**Tests:** Template service tests (versioning, override merge), rule validation tests
+**Docs:** Add rule configuration examples to docs, update CLAUDE.md
+
+### Phase 4: Rule Engine Core
+1. Integrate json-rules-engine
+2. Implement custom operators:
+   - Aggregation (SUM, COUNT, AVG, MAX, MIN)
+   - Time window support
+   - List operators (inBlacklist, inWhitelist)
+   - Geolocation operators
+3. Implement custom fact providers:
+   - Transaction history queries
+   - Account data
+   - List lookups
+4. Implement rule caching (Redis)
+5. Implement cache invalidation (pub/sub)
+
+**Tests:** Unit tests for each operator, fact provider tests, cache tests
+**Docs:** Document custom operators and facts in ARCHITECTURE.md
+
+### Phase 5: Transaction Processing
+1. Implement Transaction entity and storage
+2. Create evaluation endpoint (POST /api/transactions)
+3. Implement synchronous evaluation flow
+4. Set up RabbitMQ consumer for async processing
+5. Implement fail-open error handling
+6. Add evaluation metrics (latency, throughput)
+
+**Tests:** Evaluation flow integration tests, error handling tests, RabbitMQ consumer tests
+**Docs:** Add transaction evaluation examples to README
+
+### Phase 6: Alert System
+1. Implement Alert entity
+2. Create alert service with deduplication logic
+3. Implement action handler interface
+4. Implement DB action handler
+5. Create stub handlers for webhook/queue/block
+6. Add alert management endpoints
+
+**Tests:** Deduplication logic tests, action handler tests
+**Docs:** Document alert configuration and deduplication behavior
+
+### Phase 7: Lists Management
+1. Implement list entries entity
+2. Create CRUD endpoints
+3. Integrate with rule engine (list operators)
+
+**Tests:** List service tests, integration with rule engine
+**Docs:** Add blacklist/whitelist examples
+
+### Phase 8: Observability & Final Polish
+1. Configure Grafana dashboards (JSON exports)
+2. Run performance benchmarks, document results
+3. Final Docker Compose refinements
+4. End-to-end verification
+5. Generate Postman collection from OpenAPI spec
+
+**Tests:** Performance benchmark suite
+**Docs:** Finalize all documentation, add benchmark results
+
+---
+
+## Key Metrics to Track
+
+```typescript
+// Prometheus metrics
+const metrics = {
+  rule_evaluation_duration_seconds: Histogram,    // p50, p95, p99
+  rule_evaluation_total: Counter,                 // by result (pass/fail)
+  alerts_generated_total: Counter,                // by severity, category
+  transactions_processed_total: Counter,          // by source (api/queue)
+  active_rules_count: Gauge,                      // by organization
+  cache_hit_ratio: Gauge,                         // rule cache effectiveness
+};
+```
+
+---
+
+## Verification Plan
+
+### Functional Testing
+1. Create organization
+2. Create rule template
+3. Create rule from template with override
+4. Submit transaction via API
+5. Verify rule evaluation (pass/fail)
+6. Verify alert creation with deduplication
+7. Verify metrics endpoint
+
+### Performance Testing
+1. Load test: 50+ transactions/second
+2. Measure p99 latency (target: <100ms)
+3. Test rule cache effectiveness
+4. Test aggregation query performance
+
+### Integration Testing
+1. Full Docker Compose stack
+2. PostgreSQL migrations
+3. Redis connectivity
+4. RabbitMQ consumer
+
+---
+
+## Files to Create/Modify
+
+### New Files (Core)
+Each module includes its test files colocated:
+- `src/app.module.ts`
+- `src/main.ts`
+- `src/config/*`
+- `src/database/*`
+- `src/organizations/` (+ `*.spec.ts` files)
+- `src/rules/` (+ `*.spec.ts` files)
+- `src/templates/` (+ `*.spec.ts` files)
+- `src/engine/` (+ `*.spec.ts` files)
+- `src/transactions/` (+ `*.spec.ts` files)
+- `src/alerts/` (+ `*.spec.ts` files)
+- `src/lists/` (+ `*.spec.ts` files)
+- `src/health/` (+ `*.spec.ts` files)
+
+### Test Infrastructure
+- `test/jest-e2e.json` - E2E test config
+- `test/test-utils.ts` - Shared test utilities (test DB setup, fixtures)
+
+### Configuration Files
+- `docker-compose.yml`
+- `Dockerfile`
+- `.env.example`
+- `tsconfig.json`
+- `.eslintrc.js`
+- `.prettierrc`
+- `jest.config.js`
+- `package.json`
+
+### Documentation (Created in Phase 1, Updated Throughout)
+- `README.md` - Setup and usage instructions
+- `ARCHITECTURE.md` - ADRs and technical decisions
+- `CLAUDE.md` - AI agent instructions for Claude Code
+- `IMPLEMENTATION_PLAN.md` - This file
