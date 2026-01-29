@@ -186,3 +186,41 @@ npm run start:dev
 - Run `npm run lint` before committing
 - TypeScript strict mode enabled
 - Prefer explicit types over inference for public APIs
+
+### Changelog Maintenance
+After completing a feature or significant change, add an entry to `CHANGELOG.md`:
+
+**Entry Format:**
+```
+## [YYYY-MM-DD HH:MM] Feature/Fix Name
+**Summary:** One-line description of what was done.
+
+**Changes:**
+- Specific change 1
+- Specific change 2
+
+**Files Added:** (if any new files)
+- `path/to/new/file.go`
+
+**Files Modified:** (key files only)
+- `path/to/modified/file.ts`
+
+**Architectural Decisions:** (REQUIRED if any)
+- Decision made and rationale
+
+**Future TODOs:** (if mentioned by user)
+- [ ] Planned improvement
+```
+
+**Rules:**
+1. ALWAYS include "Architectural Decisions" section when:
+   - New patterns or abstractions are introduced
+   - Dependencies are added/removed
+   - Database schema changes
+   - API contract changes
+   - State management approach changes
+   - Infrastructure changes (deployment, caching, etc.)
+2. Group related changes under the same timestamp
+3. Be specific about what changed, not vague
+4. Include user-mentioned TODOs in the entry where they were discussed
+5. **ALWAYS add a changelog entry BEFORE creating a PR** - the changelog update should be included in the PR commit(s)
