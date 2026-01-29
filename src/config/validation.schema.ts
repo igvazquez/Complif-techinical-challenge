@@ -18,7 +18,9 @@ export const validationSchema = Joi.object({
   REDIS_PORT: Joi.number().default(6379),
 
   // RabbitMQ
-  RABBITMQ_URL: Joi.string().default('amqp://rules_user:rules_password@localhost:5672'),
+  RABBITMQ_URL: Joi.string().default(
+    'amqp://rules_user:rules_password@localhost:5672',
+  ),
 
   // Rule Engine
   MAX_TIME_WINDOW_DAYS: Joi.number().default(30),

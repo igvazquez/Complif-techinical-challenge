@@ -29,7 +29,9 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Rules Engine API')
-    .setDescription('Real-time rules engine for detecting suspicious transactions')
+    .setDescription(
+      'Real-time rules engine for detecting suspicious transactions',
+    )
     .setVersion('1.0')
     .addTag('rules', 'Rule management endpoints')
     .addTag('templates', 'Rule template management')
