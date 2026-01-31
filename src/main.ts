@@ -33,6 +33,7 @@ async function bootstrap() {
       'Real-time rules engine for detecting suspicious transactions',
     )
     .setVersion('1.0')
+    .addServer('/api')
     .addTag('rules', 'Rule management endpoints')
     .addTag('templates', 'Rule template management')
     .addTag('transactions', 'Transaction evaluation')
