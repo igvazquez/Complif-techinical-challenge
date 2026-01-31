@@ -5,6 +5,9 @@ import { ConfigModule } from './config';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health';
 import { OrganizationsModule } from './organizations';
+import { RuleTemplatesModule } from './rule-templates';
+import { TemplateOverridesModule } from './template-overrides';
+import { RulesModule } from './rules';
 
 @Module({
   imports: [
@@ -50,6 +53,9 @@ import { OrganizationsModule } from './organizations';
 
     // Domain modules
     OrganizationsModule,
+    RuleTemplatesModule,
+    TemplateOverridesModule,
+    RulesModule,
   ],
 })
 export class AppModule {}
