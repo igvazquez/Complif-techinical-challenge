@@ -4,6 +4,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { ConfigModule } from './config';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health';
+import { OrganizationsModule } from './organizations';
 
 @Module({
   imports: [
@@ -46,6 +47,9 @@ import { HealthModule } from './health';
 
     // Health checks
     HealthModule,
+
+    // Domain modules
+    OrganizationsModule,
   ],
 })
 export class AppModule {}

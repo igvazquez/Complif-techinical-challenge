@@ -1,0 +1,96 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+---
+
+## [2026-01-29 12:30] Phase 2 - Core Entities & Multi-Tenancy (Organizations Module)
+**Summary:** Implemented Organizations module with full CRUD operations, establishing the foundation for multi-tenancy.
+
+**Changes:**
+- Created Organization entity extending BaseEntity with name and settings (JSONB) fields
+- Implemented full CRUD service with paginated listing using PaginationQuery/PaginatedResult interfaces
+- Created REST controller with Swagger documentation for all endpoints
+- Added `exists()` method on service for future guard enhancements
+- Generated and ran TypeORM migration for organizations table with name index
+- Updated OrganizationGuard to use `uuid.validate()` instead of regex for cleaner UUID validation
+- Added transformIgnorePatterns to Jest config to handle uuid ESM module
+
+**Files Added:**
+- `src/organizations/entities/organization.entity.ts` - Organization entity with name and settings fields
+- `src/organizations/dto/create-organization.dto.ts` - DTO with validation decorators
+- `src/organizations/dto/update-organization.dto.ts` - Partial update DTO
+- `src/organizations/dto/index.ts` - Barrel export for DTOs
+- `src/organizations/organizations.service.ts` - CRUD service with pagination
+- `src/organizations/organizations.controller.ts` - REST endpoints with Swagger docs
+- `src/organizations/organizations.module.ts` - Module definition
+- `src/organizations/organizations.service.spec.ts` - Unit tests (14 tests)
+- `src/organizations/index.ts` - Barrel export for module
+- `src/database/migrations/1769720994153-CreateOrganizations.ts` - Migration with name index
+- `src/common/dto/pagination-query.dto.ts` - Reusable pagination query DTO with validation
+- `src/common/dto/index.ts` - Barrel export for common DTOs
+
+**Files Modified:**
+- `src/app.module.ts` - Registered OrganizationsModule
+- `src/common/guards/organization.guard.ts` - Replaced regex with uuid.validate()
+- `package.json` - Added transformIgnorePatterns for Jest/uuid ESM compatibility
+- `ARCHITECTURE.md` - Added ADR-012 (hard delete) and ADR-013 (guard validation)
+
+**Architectural Decisions:**
+- **Hard delete for organizations (ADR-012)**: Physical deletion for simplicity; soft delete can be added later if audit trail is needed
+- **OrganizationGuard validates format only (ADR-013)**: Uses uuid.validate() for format check, database existence deferred to service layer for better performance
+- **Minimal schema**: Only name and settings fields per implementation plan; additional config stored in settings JSONB
+- **Organizations not tenant-scoped**: Controller has no OrganizationGuard since organizations define tenants themselves
+
+**Future TODOs:**
+- [ ] Consider adding soft delete if audit requirements emerge
+- [ ] Consider database existence check in guard if security requirements change
+
+---
+
+## [2026-01-28 18:49] Phase 1 - Project Setup and Core Infrastructure
+**Summary:** Initial project setup with NestJS, Docker infrastructure, and core multi-tenancy patterns.
+
+**Changes:**
+- Initialized NestJS project with TypeScript strict mode
+- Configured Docker Compose with PostgreSQL, Redis, and RabbitMQ services
+- Set up TypeORM with migration support and data source configuration
+- Added Pino structured logging with pretty print for development
+- Configured Prometheus metrics endpoint at `/metrics`
+- Added environment validation with Joi schema
+- Created health check endpoint with database ping at `/health`
+- Set up Swagger API documentation at `/api`
+- Added base entities (`BaseEntity`, `TenantBaseEntity`) for multi-tenancy support
+- Created organization guard and `@OrganizationId()` decorator for tenant isolation
+- Added global exception filter for consistent error responses
+- Created initial documentation (README, ARCHITECTURE, CLAUDE.md)
+- Added comprehensive implementation plan with all phases documented
+
+**Files Added:**
+- `.env.example` - Environment variables template
+- `docker-compose.yml` - PostgreSQL, Redis, RabbitMQ services
+- `Dockerfile` - Production container build
+- `src/app.module.ts` - Root application module
+- `src/main.ts` - Application bootstrap with Swagger, logging, validation
+- `src/common/entities/base.entity.ts` - Base entity with id, createdAt, updatedAt
+- `src/common/entities/tenant-base.entity.ts` - Adds idOrganization for multi-tenancy
+- `src/common/decorators/organization.decorator.ts` - Extract org ID from request header
+- `src/common/guards/organization.guard.ts` - Validate x-organization-id header
+- `src/common/filters/http-exception.filter.ts` - Global exception handling
+- `src/config/` - Configuration module with Joi validation
+- `src/database/` - TypeORM database module and data source
+- `src/health/` - Health check controller with DB ping
+- `test/test-utils.ts` - Shared test utilities and helpers
+- `ARCHITECTURE.md` - System architecture documentation
+- `IMPLEMENTATION_PLAN.md` - Phased implementation roadmap
+- `README.md` - Project overview and setup instructions
+- `CLAUDE.md` - AI assistant coding guidelines
+
+**Architectural Decisions:**
+- **Multi-tenancy via header**: Organization ID passed via `x-organization-id` header rather than URL path for cleaner API design
+- **TenantBaseEntity pattern**: All tenant-scoped entities extend `TenantBaseEntity` which automatically includes `idOrganization` column
+- **Fail-open policy**: Rule evaluation errors will not block transactions (to be implemented in rule engine)
+- **Structured logging**: Using Pino for JSON logging in production, pretty print in development
+- **Config validation**: All environment variables validated at startup via Joi schema to fail fast on misconfiguration
+
+---

@@ -158,6 +158,41 @@ This rules engine is a B2B SaaS compliance platform designed to evaluate financi
 
 ---
 
+### ADR-012: Organization Deletion Strategy
+
+**Decision:** Hard delete (physical deletion from database)
+
+**Rationale:**
+- Simpler implementation for MVP
+- Organizations are root entities; no orphan concerns if cascade is set properly
+- No immediate audit trail requirement for deleted organizations
+- Soft delete can be added later if compliance requirements emerge (add `deleted_at` column)
+
+**Consequences:**
+- Deleted organizations cannot be recovered without database backup
+- Must implement cascade delete or restrict for dependent entities (rules, alerts, etc.)
+- Consider adding soft delete in future if audit trail is needed
+
+---
+
+### ADR-013: OrganizationGuard UUID Validation
+
+**Decision:** Use `uuid.validate()` from uuid package, format validation only (no database existence check)
+
+**Rationale:**
+- `uuid.validate()` is cleaner and more reliable than regex
+- Format validation at guard level catches malformed IDs early
+- Database existence check deferred to service layer when needed
+- Avoids database round-trip on every authenticated request
+- Invalid org IDs naturally caught when service queries return empty results
+
+**Consequences:**
+- Requests with non-existent but valid UUID org IDs pass guard
+- NotFoundException thrown at service layer when org doesn't exist
+- Better performance (no extra DB query per request)
+
+---
+
 ## Data Model
 
 ### Entity Relationships

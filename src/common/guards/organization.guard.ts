@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   BadRequestException,
 } from '@nestjs/common';
+import { validate as isValidUUID } from 'uuid';
 import { ORGANIZATION_HEADER } from '../decorators/organization.decorator';
 
 @Injectable()
@@ -18,10 +19,7 @@ export class OrganizationGuard implements CanActivate {
       );
     }
 
-    // Validate UUID format
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(organizationId)) {
+    if (!isValidUUID(organizationId)) {
       throw new BadRequestException(
         `Invalid organization ID format. Expected UUID.`,
       );

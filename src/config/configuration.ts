@@ -16,12 +16,17 @@ export default () => ({
   },
 
   rabbitmq: {
-    url: process.env.RABBITMQ_URL || 'amqp://rules_user:rules_password@localhost:5672',
+    url:
+      process.env.RABBITMQ_URL ||
+      'amqp://rules_user:rules_password@localhost:5672',
   },
 
   ruleEngine: {
     maxTimeWindowDays: parseInt(process.env.MAX_TIME_WINDOW_DAYS || '30', 10),
-    ruleCacheTtlSeconds: parseInt(process.env.RULE_CACHE_TTL_SECONDS || '300', 10),
+    ruleCacheTtlSeconds: parseInt(
+      process.env.RULE_CACHE_TTL_SECONDS || '300',
+      10,
+    ),
   },
 
   logging: {
