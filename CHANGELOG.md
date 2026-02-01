@@ -4,6 +4,60 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-01-31] Phase 3 - Rule Templates, Template Overrides & Rules Modules
+**Summary:** Implemented the core rules infrastructure with three interconnected modules for managing rule templates, organization-specific overrides, and active rules.
+
+**Changes:**
+- Created RuleTemplate entity (system-wide, extends BaseEntity) with unique name constraint
+- Created TemplateOverride entity (tenant-scoped, extends TenantBaseEntity) for organization customizations
+- Created Rule entity (tenant-scoped, extends TenantBaseEntity) with optional template linking
+- Implemented deep merge logic for effective config calculation (template → override → rule)
+- Added specialized endpoints: `GET /defaults`, `GET /merged-config`, `GET /enabled`, `GET /effective-config`
+- Fixed Jest e2e config for uuid ESM module compatibility
+- Added CASCADE truncation in e2e tests to handle foreign key constraints
+
+**Files Added:**
+- `src/rule-templates/` - Complete module with entity, DTOs, service, controller, unit tests
+- `src/template-overrides/` - Complete module with entity, DTOs, service, controller, unit tests
+- `src/rules/` - Complete module with entity, DTOs, service, controller, unit tests
+- `src/database/migrations/1769882048834-CreateRuleTemplates.ts`
+- `src/database/migrations/1769882137084-CreateTemplateOverrides.ts`
+- `src/database/migrations/1769882246824-CreateRules.ts`
+- `test/rule-templates.e2e-spec.ts` - 18 e2e tests
+- `test/template-overrides.e2e-spec.ts` - 16 e2e tests
+- `test/rules.e2e-spec.ts` - 19 e2e tests
+
+**Files Modified:**
+- `src/app.module.ts` - Registered RuleTemplatesModule, TemplateOverridesModule, RulesModule
+- `test/jest-e2e.json` - Added transformIgnorePatterns for uuid, maxWorkers: 1 for sequential execution
+- `test/test-utils.ts` - Added createMockRuleTemplate() and createMockTemplateOverride() factories
+
+**API Endpoints:**
+| Module | Endpoint | Guard | Description |
+|--------|----------|-------|-------------|
+| Templates | `POST/GET/PATCH/DELETE /api/rule-templates` | None | CRUD for system-wide templates |
+| Templates | `GET /api/rule-templates/defaults` | None | Get default templates |
+| Overrides | `POST/GET/PATCH/DELETE /api/template-overrides` | OrganizationGuard | CRUD for org overrides |
+| Overrides | `GET /api/template-overrides/template/:id/merged-config` | OrganizationGuard | Get merged template+override config |
+| Rules | `POST/GET/PATCH/DELETE /api/rules` | OrganizationGuard | CRUD for org rules |
+| Rules | `GET /api/rules/enabled` | OrganizationGuard | Get enabled rules by priority |
+| Rules | `GET /api/rules/:id/effective-config` | OrganizationGuard | Get fully merged config |
+
+**Database Schema:**
+- `rule_templates`: id, name (UNIQUE), description, config (JSONB), is_default, created_at, updated_at
+- `template_overrides`: id, id_organization, id_template (FK), overrides (JSONB), enabled, created_at, updated_at
+  - UNIQUE constraint on (id_organization, id_template)
+  - FK to rule_templates with CASCADE delete
+- `rules`: id, id_organization, id_template (nullable FK), name, description, enabled, priority, config (JSONB), created_by, created_at, updated_at
+  - FK to rule_templates with SET NULL on delete
+  - Indexes on id_organization, (id_organization, priority), (id_organization, enabled)
+
+**Test Coverage:**
+- Unit tests: 30 new tests across 3 service spec files
+- E2E tests: 53 new tests across 3 e2e spec files
+
+---
+
 ## [2026-01-29 12:30] Phase 2 - Core Entities & Multi-Tenancy (Organizations Module)
 **Summary:** Implemented Organizations module with full CRUD operations, establishing the foundation for multi-tenancy.
 

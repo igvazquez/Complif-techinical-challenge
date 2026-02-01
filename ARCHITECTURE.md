@@ -193,6 +193,37 @@ This rules engine is a B2B SaaS compliance platform designed to evaluate financi
 
 ---
 
+## Module Structure
+
+### Implemented Modules
+
+| Module | Purpose | Multi-tenant | Guard |
+|--------|---------|--------------|-------|
+| `OrganizationsModule` | Tenant management | No (root) | None |
+| `RuleTemplatesModule` | System-wide rule templates | No | None |
+| `TemplateOverridesModule` | Org-specific template customizations | Yes | OrganizationGuard |
+| `RulesModule` | Active rules per organization | Yes | OrganizationGuard |
+
+### Configuration Inheritance Chain
+
+```
+RuleTemplate.config
+        ↓
+TemplateOverride.overrides (deep merge)
+        ↓
+Rule.config (deep merge)
+        ↓
+Effective Config (used for evaluation)
+```
+
+The `getEffectiveConfig()` method in RulesService performs this merge chain:
+1. Start with template's base config
+2. Apply organization's override (if enabled)
+3. Apply rule's own config overrides
+4. Return final merged configuration
+
+---
+
 ## Data Model
 
 ### Entity Relationships

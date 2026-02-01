@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -122,6 +121,59 @@ export function createMockAlert(overrides: Partial<any> = {}) {
     lastTriggeredAt: new Date(),
     dedupKey: `rule:account:window`,
     metadata: {},
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+export function createMockRuleTemplate(overrides: Partial<any> = {}) {
+  return {
+    id: generateUUID(),
+    name: 'Test Rule Template',
+    description: 'Test template description',
+    config: {
+      conditions: {
+        all: [
+          {
+            fact: 'transaction.amount',
+            operator: 'greaterThan',
+            value: 10000,
+          },
+        ],
+      },
+      event: {
+        type: 'alert',
+        params: {
+          severity: 'HIGH',
+          category: 'AML',
+        },
+      },
+    },
+    isDefault: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+export function createMockTemplateOverride(overrides: Partial<any> = {}) {
+  return {
+    id: generateUUID(),
+    idOrganization: generateUUID(),
+    idTemplate: generateUUID(),
+    overrides: {
+      conditions: {
+        all: [
+          {
+            fact: 'transaction.amount',
+            operator: 'greaterThan',
+            value: 50000,
+          },
+        ],
+      },
+    },
+    enabled: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
