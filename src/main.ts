@@ -1,12 +1,29 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const configService = app.get(ConfigService);
+
+  // Connect RabbitMQ microservice
+  const rabbitmqUrl = configService.get<string>('rabbitmq.url');
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rabbitmqUrl],
+      queue: 'transactions',
+      queueOptions: {
+        durable: true,
+      },
+      noAck: false,
+    },
+  });
 
   // Use Pino for logging
   app.useLogger(app.get(PinoLogger));
@@ -59,11 +76,15 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 3000;
+
+  // Start all microservices
+  await app.startAllMicroservices();
   await app.listen(port);
 
   const logger = new Logger('Bootstrap');
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Swagger docs available at: http://localhost:${port}/api/docs`);
+  logger.log('RabbitMQ microservice connected to transactions queue');
 }
 
 bootstrap();

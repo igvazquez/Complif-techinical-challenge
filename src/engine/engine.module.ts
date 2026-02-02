@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   EngineService,
   evaluationDurationHistogramProvider,
@@ -14,9 +15,10 @@ import { TransactionHistoryFact } from './facts/transaction-history.fact';
 import { AccountFact } from './facts/account.fact';
 import { ListLookupFact } from './facts/list-lookup.fact';
 import { RulesModule } from '../rules/rules.module';
+import { Transaction } from '../transactions/entities/transaction.entity';
 
 @Module({
-  imports: [RulesModule],
+  imports: [RulesModule, TypeOrmModule.forFeature([Transaction])],
   controllers: [EngineController],
   providers: [
     EngineService,

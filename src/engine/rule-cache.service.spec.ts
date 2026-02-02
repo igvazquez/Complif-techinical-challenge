@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getLoggerToken } from 'nestjs-pino';
@@ -105,9 +104,7 @@ describe('RuleCacheService', () => {
       await service.onModuleInit();
 
       const cachedData: CachedRules = {
-        rules: [
-          { id: 'rule-1', name: 'Test Rule', priority: 0, config: {} },
-        ],
+        rules: [{ id: 'rule-1', name: 'Test Rule', priority: 0, config: {} }],
         cachedAt: Date.now(),
       };
 
