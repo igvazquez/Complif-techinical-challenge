@@ -203,6 +203,7 @@ This rules engine is a B2B SaaS compliance platform designed to evaluate financi
 | `RuleTemplatesModule` | System-wide rule templates | No | None |
 | `TemplateOverridesModule` | Org-specific template customizations | Yes | OrganizationGuard |
 | `RulesModule` | Active rules per organization | Yes | OrganizationGuard |
+| `EngineModule` | Rule evaluation engine | Yes | OrganizationGuard |
 
 ### Configuration Inheritance Chain
 
@@ -310,6 +311,82 @@ Blacklist/Whitelist checks.
   "params": { "listType": "BLACKLIST", "entityType": "ACCOUNT" }
 }
 ```
+
+---
+
+## Rule Engine
+
+### Custom Operators
+
+The engine extends json-rules-engine with custom operators for compliance-specific evaluations.
+
+#### Aggregation Operators (`src/engine/operators/aggregation.operator.ts`)
+
+| Operator | Description | Usage |
+|----------|-------------|-------|
+| `sumGreaterThan` | Check if sum exceeds threshold | `{ operator: "sumGreaterThan", value: 10000 }` |
+| `countGreaterThan` | Check if count exceeds threshold | `{ operator: "countGreaterThan", value: 5 }` |
+| `avgGreaterThan` | Check if average exceeds threshold | `{ operator: "avgGreaterThan", value: 1000 }` |
+
+#### List Operators (`src/engine/operators/list.operator.ts`)
+
+| Operator | Description | Usage |
+|----------|-------------|-------|
+| `inBlacklist` | Check if value is in blacklist | `{ operator: "inBlacklist", value: ["blocked-id"] }` |
+| `inWhitelist` | Check if value is in whitelist | `{ operator: "inWhitelist", value: ["allowed-id"] }` |
+| `containsValue` | Check if array contains value | `{ operator: "containsValue", value: "target" }` |
+
+#### Geolocation Operators (`src/engine/operators/geolocation.operator.ts`)
+
+| Operator | Description | Usage |
+|----------|-------------|-------|
+| `inCountry` | Check if country is in allowed list | `{ operator: "inCountry", value: ["AR", "BR"] }` |
+| `notInCountry` | Check if country is not in blocked list | `{ operator: "notInCountry", value: ["KP", "IR"] }` |
+| `isHighRiskCountry` | Check against high-risk country list | `{ operator: "isHighRiskCountry", value: true }` |
+
+### Fact Providers
+
+Fact providers supply dynamic data to rules during evaluation.
+
+#### Transaction History (`src/engine/facts/transaction-history.fact.ts`)
+- **Fact ID:** `transactionHistory`
+- **Purpose:** Aggregates transaction data over time windows
+- **Status:** Stubbed (returns 0) - will integrate with Transactions module in Phase 5
+- **Params:** `{ accountId, timeWindow, aggregationType }`
+
+#### Account Data (`src/engine/facts/account.fact.ts`)
+- **Fact ID:** `accountData`
+- **Purpose:** Retrieves account information for evaluation
+- **Status:** Stubbed (returns mock data) - will integrate with external account service
+- **Params:** `{ accountId, field }`
+
+#### List Lookup (`src/engine/facts/list-lookup.fact.ts`)
+- **Fact ID:** `listLookup`
+- **Purpose:** Checks if entity exists in blacklist/whitelist
+- **Status:** Stubbed (returns false) - will integrate with Lists module in Phase 7
+- **Params:** `{ listType, entityType, entityValue }`
+
+### Rule Caching
+
+Rules are cached in Redis to avoid database queries on every evaluation.
+
+**Cache key pattern:** `rules:engine:{organizationId}`
+**TTL:** 300 seconds (configurable)
+
+#### Cache Invalidation
+Cache is invalidated via NestJS EventEmitter when:
+- A rule is created, updated, or deleted
+- A template override is created, updated, or deleted
+
+The `RuleCacheService` subscribes to `rule.cache.invalidate` events and clears the cache for the affected organization.
+
+### Prometheus Metrics
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `rule_evaluation_duration_seconds` | Histogram | `organization_id` | Time taken to evaluate rules |
+| `rule_cache_hits_total` | Counter | - | Number of cache hits |
+| `rule_cache_misses_total` | Counter | - | Number of cache misses |
 
 ---
 

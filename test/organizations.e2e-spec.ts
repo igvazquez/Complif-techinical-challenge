@@ -213,7 +213,10 @@ describe('OrganizationsController (e2e)', () => {
   describe('GET /api/organizations/:id', () => {
     it('should return an organization by id', async () => {
       const repo = dataSource.getRepository(Organization);
-      const org = await repo.save({ name: 'Test Org', settings: { key: 'value' } });
+      const org = await repo.save({
+        name: 'Test Org',
+        settings: { key: 'value' },
+      });
 
       const response = await request(app.getHttpServer())
         .get(`/api/organizations/${org.id}`)
@@ -260,7 +263,10 @@ describe('OrganizationsController (e2e)', () => {
 
     it('should update organization settings', async () => {
       const repo = dataSource.getRepository(Organization);
-      const org = await repo.save({ name: 'Test Org', settings: { old: 'value' } });
+      const org = await repo.save({
+        name: 'Test Org',
+        settings: { old: 'value' },
+      });
 
       const response = await request(app.getHttpServer())
         .patch(`/api/organizations/${org.id}`)

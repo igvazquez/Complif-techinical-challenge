@@ -4,11 +4,16 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Repository } from 'typeorm';
 import { TemplateOverride } from './entities/template-override.entity';
 import { CreateTemplateOverrideDto, UpdateTemplateOverrideDto } from './dto';
 import { RuleTemplatesService } from '../rule-templates/rule-templates.service';
 import { PaginationQuery, PaginatedResult } from '../common/interfaces';
+import {
+  RULE_CACHE_INVALIDATION_EVENT,
+  RuleCacheInvalidationEvent,
+} from '../common/events/rule-cache.events';
 
 @Injectable()
 export class TemplateOverridesService {
@@ -16,6 +21,7 @@ export class TemplateOverridesService {
     @InjectRepository(TemplateOverride)
     private readonly templateOverrideRepository: Repository<TemplateOverride>,
     private readonly ruleTemplatesService: RuleTemplatesService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(
@@ -46,7 +52,12 @@ export class TemplateOverridesService {
       enabled: createDto.enabled ?? true,
     });
 
-    return this.templateOverrideRepository.save(templateOverride);
+    const saved = await this.templateOverrideRepository.save(templateOverride);
+    this.eventEmitter.emit(
+      RULE_CACHE_INVALIDATION_EVENT,
+      new RuleCacheInvalidationEvent(organizationId),
+    );
+    return saved;
   }
 
   async findAll(
@@ -126,12 +137,21 @@ export class TemplateOverridesService {
 
     Object.assign(templateOverride, updateDto);
 
-    return this.templateOverrideRepository.save(templateOverride);
+    const saved = await this.templateOverrideRepository.save(templateOverride);
+    this.eventEmitter.emit(
+      RULE_CACHE_INVALIDATION_EVENT,
+      new RuleCacheInvalidationEvent(organizationId),
+    );
+    return saved;
   }
 
   async remove(organizationId: string, id: string): Promise<void> {
     const templateOverride = await this.findOne(organizationId, id);
     await this.templateOverrideRepository.remove(templateOverride);
+    this.eventEmitter.emit(
+      RULE_CACHE_INVALIDATION_EVENT,
+      new RuleCacheInvalidationEvent(organizationId),
+    );
   }
 
   private deepMerge(

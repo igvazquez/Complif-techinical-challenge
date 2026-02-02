@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Repository } from 'typeorm';
 import { Rule } from './entities/rule.entity';
 import { CreateRuleDto, UpdateRuleDto } from './dto';
 import { TemplateOverridesService } from '../template-overrides/template-overrides.service';
 import { PaginationQuery, PaginatedResult } from '../common/interfaces';
+import {
+  RULE_CACHE_INVALIDATION_EVENT,
+  RuleCacheInvalidationEvent,
+} from '../common/events/rule-cache.events';
 
 @Injectable()
 export class RulesService {
@@ -12,6 +17,7 @@ export class RulesService {
     @InjectRepository(Rule)
     private readonly ruleRepository: Repository<Rule>,
     private readonly templateOverridesService: TemplateOverridesService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(
@@ -29,7 +35,12 @@ export class RulesService {
       createdBy: createDto.createdBy ?? null,
     });
 
-    return this.ruleRepository.save(rule);
+    const savedRule = await this.ruleRepository.save(rule);
+    this.eventEmitter.emit(
+      RULE_CACHE_INVALIDATION_EVENT,
+      new RuleCacheInvalidationEvent(organizationId),
+    );
+    return savedRule;
   }
 
   async findAll(
@@ -117,12 +128,21 @@ export class RulesService {
 
     Object.assign(rule, updateDto);
 
-    return this.ruleRepository.save(rule);
+    const savedRule = await this.ruleRepository.save(rule);
+    this.eventEmitter.emit(
+      RULE_CACHE_INVALIDATION_EVENT,
+      new RuleCacheInvalidationEvent(organizationId),
+    );
+    return savedRule;
   }
 
   async remove(organizationId: string, id: string): Promise<void> {
     const rule = await this.findOne(organizationId, id);
     await this.ruleRepository.remove(rule);
+    this.eventEmitter.emit(
+      RULE_CACHE_INVALIDATION_EVENT,
+      new RuleCacheInvalidationEvent(organizationId),
+    );
   }
 
   private deepMerge(
