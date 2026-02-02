@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from './config';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health';
@@ -8,11 +9,15 @@ import { OrganizationsModule } from './organizations';
 import { RuleTemplatesModule } from './rule-templates';
 import { TemplateOverridesModule } from './template-overrides';
 import { RulesModule } from './rules';
+import { EngineModule } from './engine';
 
 @Module({
   imports: [
     // Configuration
     ConfigModule,
+
+    // Event Emitter
+    EventEmitterModule.forRoot(),
 
     // Logging
     LoggerModule.forRoot({
@@ -56,6 +61,7 @@ import { RulesModule } from './rules';
     RuleTemplatesModule,
     TemplateOverridesModule,
     RulesModule,
+    EngineModule,
   ],
 })
 export class AppModule {}

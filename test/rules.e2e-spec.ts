@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { RulesModule } from '../src/rules/rules.module';
 import { RuleTemplatesModule } from '../src/rule-templates/rule-templates.module';
 import { TemplateOverridesModule } from '../src/template-overrides/template-overrides.module';
@@ -32,6 +33,7 @@ describe('RulesController (e2e)', () => {
           load: [configuration],
           validationSchema,
         }),
+        EventEmitterModule.forRoot(),
         TypeOrmModule.forRootAsync({
           useFactory: (configService: ConfigService) => ({
             type: 'postgres',

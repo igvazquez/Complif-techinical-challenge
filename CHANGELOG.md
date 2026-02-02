@@ -4,6 +4,75 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-02-01] Phase 4 - Rule Engine Core
+**Summary:** Implemented the core rule evaluation engine using json-rules-engine with custom operators, fact providers, Redis caching, and Prometheus metrics.
+
+**Changes:**
+- Integrated json-rules-engine v7.3.1 for rule evaluation
+- Created custom operators: aggregation (sumGreaterThan, countGreaterThan, avgGreaterThan), list (inBlacklist, inWhitelist, containsValue), geolocation (inCountry, notInCountry, isHighRiskCountry)
+- Created stubbed fact providers for transaction history, account data, and list lookups (to be implemented in Phase 5/7)
+- Implemented Redis caching for compiled rules with TTL and pub/sub invalidation
+- Added Prometheus metrics for evaluation duration and cache hit/miss tracking
+- Implemented fail-open error handling per ADR-010
+- Added cache invalidation events to RulesService and TemplateOverridesService
+- Created REST endpoints for transaction evaluation
+
+**Files Added:**
+- `src/engine/engine.module.ts` - Engine module importing RulesModule and providing all engine services
+- `src/engine/engine.service.ts` - Core evaluation service with Prometheus metrics
+- `src/engine/engine.service.spec.ts` - 21 unit tests
+- `src/engine/engine.controller.ts` - REST endpoints for evaluation
+- `src/engine/rule-cache.service.ts` - Redis caching with pub/sub invalidation
+- `src/engine/rule-cache.service.spec.ts` - 15 unit tests
+- `src/engine/interfaces/` - evaluation-context, evaluation-result, fact-provider interfaces
+- `src/engine/operators/aggregation.operator.ts` - sumGreaterThan, countGreaterThan, avgGreaterThan
+- `src/engine/operators/aggregation.operator.spec.ts` - 12 unit tests
+- `src/engine/operators/list.operator.ts` - inBlacklist, inWhitelist, containsValue
+- `src/engine/operators/list.operator.spec.ts` - 15 unit tests
+- `src/engine/operators/geolocation.operator.ts` - inCountry, notInCountry, isHighRiskCountry
+- `src/engine/operators/geolocation.operator.spec.ts` - 15 unit tests
+- `src/engine/facts/transaction-history.fact.ts` - Stubbed fact provider (returns 0)
+- `src/engine/facts/transaction-history.fact.spec.ts` - 3 unit tests
+- `src/engine/facts/account.fact.ts` - Stubbed fact provider (returns mock data)
+- `src/engine/facts/account.fact.spec.ts` - 3 unit tests
+- `src/engine/facts/list-lookup.fact.ts` - Stubbed fact provider (returns false)
+- `src/engine/dto/evaluate-transaction.dto.ts` - Validation DTOs with @ValidateNested
+- `src/common/events/rule-cache.events.ts` - Cache invalidation event class
+- `test/engine.e2e-spec.ts` - 16 e2e tests for engine evaluation flow
+
+**Files Modified:**
+- `src/app.module.ts` - Added EngineModule and EventEmitterModule
+- `src/rules/rules.service.ts` - Added EventEmitter2 injection and cache invalidation events
+- `src/rules/rules.service.spec.ts` - Added mock EventEmitter2
+- `src/template-overrides/template-overrides.service.ts` - Added cache invalidation events
+- `src/template-overrides/template-overrides.service.spec.ts` - Added mock EventEmitter2
+- `test/rules.e2e-spec.ts` - Added EventEmitterModule.forRoot()
+- `test/template-overrides.e2e-spec.ts` - Added EventEmitterModule.forRoot()
+
+**API Endpoints:**
+| Endpoint | Guard | Description |
+|----------|-------|-------------|
+| `POST /api/engine/evaluate` | OrganizationGuard | Evaluate transaction against all enabled rules |
+| `POST /api/engine/evaluate/:ruleId` | OrganizationGuard | Evaluate transaction against a specific rule |
+
+**Prometheus Metrics:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `rule_evaluation_duration_seconds` | Histogram | Time taken to evaluate rules |
+| `rule_cache_hits_total` | Counter | Number of cache hits |
+| `rule_cache_misses_total` | Counter | Number of cache misses |
+
+**Test Coverage:**
+- Unit tests: 84 new tests across engine module (operators, facts, cache, service)
+- E2E tests: 16 new tests for engine evaluation flow
+- Total: 149 unit tests passing, 91 e2e tests passing
+
+**Deferred from Phase 3:**
+- Version management for rule templates
+- JSON Schema validation for rule configs
+
+---
+
 ## [2026-01-31] Phase 3 - Rule Templates, Template Overrides & Rules Modules
 **Summary:** Implemented the core rules infrastructure with three interconnected modules for managing rule templates, organization-specific overrides, and active rules.
 

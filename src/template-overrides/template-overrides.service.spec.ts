@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Repository } from 'typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { TemplateOverridesService } from './template-overrides.service';
@@ -36,6 +37,10 @@ describe('TemplateOverridesService', () => {
       findOne: jest.fn(),
     };
 
+    const mockEventEmitter = {
+      emit: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TemplateOverridesService,
@@ -46,6 +51,10 @@ describe('TemplateOverridesService', () => {
         {
           provide: RuleTemplatesService,
           useValue: mockRuleTemplatesService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();
