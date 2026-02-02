@@ -17,9 +17,10 @@ interface AccountData {
 type AccountFieldValue = string | number | Record<string, unknown>;
 
 @Injectable()
-export class AccountFact
-  implements FactProvider<AccountParams, AccountData | AccountFieldValue | null>
-{
+export class AccountFact implements FactProvider<
+  AccountParams,
+  AccountData | AccountFieldValue | null
+> {
   readonly factId = 'account';
 
   async calculate(

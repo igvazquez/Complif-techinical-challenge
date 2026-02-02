@@ -9,6 +9,9 @@ import { AccountFact } from './facts/account.fact';
 import { ListLookupFact } from './facts/list-lookup.fact';
 import { EvaluationContext } from './interfaces';
 import { generateUUID } from '../../test/test-utils';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Transaction } from '../transactions/entities/transaction.entity';
+import { ConfigService } from '@nestjs/config';
 
 // Helper to create the metric token string (matching @willsoto/nestjs-prometheus)
 const getMetricToken = (name: string) => `PROM_METRIC_${name.toUpperCase()}`;
@@ -62,6 +65,19 @@ describe('EngineService', () => {
       invalidate: jest.fn(),
     };
 
+    const mockTransactionRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ result: '0' }),
+      }),
+    };
+
+    const mockConfigService = {
+      get: jest.fn().mockReturnValue(30),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EngineService,
@@ -92,6 +108,14 @@ describe('EngineService', () => {
           provide: getMetricToken('rules_evaluated_total'),
           useValue: mockCounter,
         },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: mockTransactionRepository,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
       ],
     }).compile();
 
@@ -116,7 +140,10 @@ describe('EngineService', () => {
       ruleCacheService.get.mockResolvedValue(null);
       rulesService.findEnabledByPriority.mockResolvedValue([]);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(result.success).toBe(true);
       expect(result.events).toHaveLength(0);
@@ -151,7 +178,10 @@ describe('EngineService', () => {
 
       ruleCacheService.get.mockResolvedValue(cachedRules);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(ruleCacheService.get).toHaveBeenCalledWith(organizationId);
       expect(rulesService.findEnabledByPriority).not.toHaveBeenCalled();
@@ -189,7 +219,10 @@ describe('EngineService', () => {
 
       ruleCacheService.get.mockResolvedValue(cachedRules);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(result.success).toBe(true);
       expect(result.events).toHaveLength(1);
@@ -209,7 +242,11 @@ describe('EngineService', () => {
             config: {
               conditions: {
                 all: [
-                  { fact: 'transaction.amount', operator: 'greaterThan', value: 100 },
+                  {
+                    fact: 'transaction.amount',
+                    operator: 'greaterThan',
+                    value: 100,
+                  },
                 ],
               },
               event: { type: 'low-alert', params: {} },
@@ -222,7 +259,11 @@ describe('EngineService', () => {
             config: {
               conditions: {
                 all: [
-                  { fact: 'transaction.amount', operator: 'greaterThan', value: 10000 },
+                  {
+                    fact: 'transaction.amount',
+                    operator: 'greaterThan',
+                    value: 10000,
+                  },
                 ],
               },
               event: { type: 'high-alert', params: {} },
@@ -234,7 +275,10 @@ describe('EngineService', () => {
 
       ruleCacheService.get.mockResolvedValue(cachedRules);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(result.evaluatedRulesCount).toBe(2);
       // Only the low threshold rule should trigger
@@ -262,7 +306,11 @@ describe('EngineService', () => {
             config: {
               conditions: {
                 all: [
-                  { fact: 'transaction.amount', operator: 'greaterThan', value: 100 },
+                  {
+                    fact: 'transaction.amount',
+                    operator: 'greaterThan',
+                    value: 100,
+                  },
                 ],
               },
               event: { type: 'success-alert', params: {} },
@@ -274,7 +322,10 @@ describe('EngineService', () => {
 
       ruleCacheService.get.mockResolvedValue(cachedRules);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       // Should have 1 failed rule but still evaluate the good rule
       expect(result.failedRules.length).toBeGreaterThanOrEqual(1);
@@ -294,7 +345,11 @@ describe('EngineService', () => {
           config: {
             conditions: {
               all: [
-                { fact: 'transaction.amount', operator: 'greaterThan', value: 100 },
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 100,
+                },
               ],
             },
             event: { type: 'db-alert', params: {} },
@@ -313,7 +368,10 @@ describe('EngineService', () => {
         event: { type: 'db-alert', params: {} },
       });
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(rulesService.findEnabledByPriority).toHaveBeenCalledWith(
         organizationId,
@@ -334,7 +392,11 @@ describe('EngineService', () => {
             config: {
               conditions: {
                 all: [
-                  { fact: 'transaction.amount', operator: 'greaterThan', value: 100 },
+                  {
+                    fact: 'transaction.amount',
+                    operator: 'greaterThan',
+                    value: 100,
+                  },
                 ],
               },
               event: { type: 'alert', params: {} },
@@ -366,7 +428,11 @@ describe('EngineService', () => {
         config: {
           conditions: {
             all: [
-              { fact: 'transaction.amount', operator: 'greaterThan', value: 100 },
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 100,
+              },
             ],
           },
           event: { type: 'single-alert', params: {} },
@@ -434,7 +500,10 @@ describe('EngineService', () => {
 
       ruleCacheService.get.mockResolvedValue(cachedRules);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(result.events).toHaveLength(1);
       expect(result.events[0].type).toBe('country-match');
@@ -472,7 +541,10 @@ describe('EngineService', () => {
 
       ruleCacheService.get.mockResolvedValue(cachedRules);
 
-      const result = await service.evaluate(organizationId, createMockContext());
+      const result = await service.evaluate(
+        organizationId,
+        createMockContext(),
+      );
 
       expect(result.events).toHaveLength(1);
       expect(result.events[0].type).toBe('sum-exceeded');

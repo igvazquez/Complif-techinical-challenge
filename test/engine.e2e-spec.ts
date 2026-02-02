@@ -104,7 +104,11 @@ describe('EngineController (e2e)', () => {
       config: {
         conditions: {
           all: [
-            { fact: 'transaction.amount', operator: 'greaterThan', value: 10000 },
+            {
+              fact: 'transaction.amount',
+              operator: 'greaterThan',
+              value: 10000,
+            },
           ],
         },
         event: {
@@ -154,7 +158,11 @@ describe('EngineController (e2e)', () => {
         config: {
           conditions: {
             all: [
-              { fact: 'transaction.amount', operator: 'greaterThan', value: 1000 },
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 1000,
+              },
             ],
           },
           event: {
@@ -188,7 +196,11 @@ describe('EngineController (e2e)', () => {
         config: {
           conditions: {
             all: [
-              { fact: 'transaction.amount', operator: 'greaterThan', value: 10000 },
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 10000,
+              },
             ],
           },
           event: { type: 'amount-exceeded', params: {} },
@@ -216,7 +228,13 @@ describe('EngineController (e2e)', () => {
           priority: 0,
           config: {
             conditions: {
-              all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+              all: [
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 100,
+                },
+              ],
             },
             event: { type: 'enabled-alert', params: {} },
           },
@@ -228,7 +246,13 @@ describe('EngineController (e2e)', () => {
           priority: 1,
           config: {
             conditions: {
-              all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+              all: [
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 100,
+                },
+              ],
             },
             event: { type: 'disabled-alert', params: {} },
           },
@@ -257,7 +281,13 @@ describe('EngineController (e2e)', () => {
           priority: 10,
           config: {
             conditions: {
-              all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+              all: [
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 100,
+                },
+              ],
             },
             event: { type: 'low-priority', params: { order: 2 } },
           },
@@ -269,7 +299,13 @@ describe('EngineController (e2e)', () => {
           priority: 1,
           config: {
             conditions: {
-              all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+              all: [
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 100,
+                },
+              ],
             },
             event: { type: 'high-priority', params: { order: 1 } },
           },
@@ -324,7 +360,11 @@ describe('EngineController (e2e)', () => {
         overrides: {
           conditions: {
             all: [
-              { fact: 'transaction.amount', operator: 'greaterThan', value: 5000 },
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 5000,
+              },
             ],
           },
         },
@@ -388,7 +428,13 @@ describe('EngineController (e2e)', () => {
         priority: 0,
         config: {
           conditions: {
-            all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+            all: [
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 100,
+              },
+            ],
           },
           event: { type: 'other-org-alert', params: {} },
         },
@@ -428,7 +474,13 @@ describe('EngineController (e2e)', () => {
         priority: 0,
         config: {
           conditions: {
-            all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+            all: [
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 100,
+              },
+            ],
           },
           event: { type: 'single-alert', params: {} },
         },
@@ -469,7 +521,13 @@ describe('EngineController (e2e)', () => {
         priority: 0,
         config: {
           conditions: {
-            all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+            all: [
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 100,
+              },
+            ],
           },
           event: { type: 'alert', params: {} },
         },
@@ -510,7 +568,13 @@ describe('EngineController (e2e)', () => {
           enabled: true,
           config: {
             conditions: {
-              all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 100 }],
+              all: [
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 100,
+                },
+              ],
             },
             event: { type: 'new-alert', params: {} },
           },
@@ -539,7 +603,13 @@ describe('EngineController (e2e)', () => {
         priority: 0,
         config: {
           conditions: {
-            all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 10000 }],
+            all: [
+              {
+                fact: 'transaction.amount',
+                operator: 'greaterThan',
+                value: 10000,
+              },
+            ],
           },
           event: { type: 'original-alert', params: {} },
         },
@@ -561,7 +631,13 @@ describe('EngineController (e2e)', () => {
         .send({
           config: {
             conditions: {
-              all: [{ fact: 'transaction.amount', operator: 'greaterThan', value: 1000 }],
+              all: [
+                {
+                  fact: 'transaction.amount',
+                  operator: 'greaterThan',
+                  value: 1000,
+                },
+              ],
             },
             event: { type: 'updated-alert', params: {} },
           },

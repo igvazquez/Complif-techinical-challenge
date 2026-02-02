@@ -10,6 +10,7 @@ import { RuleTemplatesModule } from './rule-templates';
 import { TemplateOverridesModule } from './template-overrides';
 import { RulesModule } from './rules';
 import { EngineModule } from './engine';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { EngineModule } from './engine';
     TemplateOverridesModule,
     RulesModule,
     EngineModule,
+    TransactionsModule,
   ],
 })
 export class AppModule {}

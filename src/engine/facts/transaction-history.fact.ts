@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Almanac } from 'json-rules-engine';
 import {
   FactProvider,
   TransactionHistoryParams,
 } from '../interfaces/fact-provider.interface';
+import { Transaction } from '../../transactions/entities/transaction.entity';
 
 @Injectable()
 export class TransactionHistoryFact implements FactProvider<
@@ -11,41 +15,100 @@ export class TransactionHistoryFact implements FactProvider<
   number
 > {
   readonly factId = 'transactionHistory';
+  private readonly maxTimeWindowDays: number;
 
-  calculate(
+  constructor(
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+    private readonly configService: ConfigService,
+  ) {
+    this.maxTimeWindowDays = this.configService.get<number>(
+      'ruleEngine.maxTimeWindowDays',
+      30,
+    );
+  }
+
+  async calculate(
     params: TransactionHistoryParams,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _almanac: Almanac,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _organizationId: string,
+    almanac: Almanac,
+    organizationId: string,
   ): Promise<number> {
-    // Stub implementation - returns 0 until Transactions module is implemented in Phase 5
-    // TODO: Implement actual transaction history aggregation
-    //
-    // Expected behavior:
-    // - Query transactions table for the given account within timeWindowDays
-    // - Filter by transactionType if provided
-    // - Apply aggregation (sum, count, avg) on the specified field
-    //
-    // Example params:
-    // {
-    //   aggregation: 'sum',
-    //   field: 'amountNormalized',
-    //   timeWindowDays: 7,
-    //   transactionType: 'CASH_IN',
-    //   accountId: 'acc-123'
-    // }
+    const {
+      aggregation,
+      field = 'amountNormalized',
+      timeWindowDays,
+      transactionType,
+    } = params;
 
-    const { aggregation, field, timeWindowDays, transactionType, accountId } =
-      params;
+    // Get accountId from params or from the current transaction context
+    let accountId = params.accountId;
+    if (!accountId) {
+      // Try to get from almanac - the transaction.idAccount fact should be set
+      const txIdAccount = await almanac.factValue<string | undefined>(
+        'transaction.idAccount',
+      );
+      if (txIdAccount) {
+        accountId = txIdAccount;
+      }
+    }
 
-    // Log stub usage for debugging
-    void aggregation;
-    void field;
-    void timeWindowDays;
-    void transactionType;
-    void accountId;
+    if (!accountId) {
+      return 0;
+    }
 
-    return Promise.resolve(0);
+    // Enforce max time window
+    const effectiveTimeWindow = Math.min(
+      timeWindowDays,
+      this.maxTimeWindowDays,
+    );
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - effectiveTimeWindow);
+
+    // Build query using property names (TypeORM queryBuilder)
+    const queryBuilder = this.transactionRepository
+      .createQueryBuilder('tx')
+      .where('tx.idOrganization = :organizationId', { organizationId })
+      .andWhere('tx.idAccount = :accountId', { accountId })
+      .andWhere('tx.datetime > :startDate', { startDate })
+      .andWhere('tx.isVoided = false')
+      .andWhere('tx.isDeleted = false');
+
+    // Filter by transaction type if provided
+    if (transactionType) {
+      queryBuilder.andWhere('tx.type = :transactionType', { transactionType });
+    }
+
+    // Apply aggregation using property names
+    switch (aggregation) {
+      case 'sum':
+        queryBuilder.select(
+          `COALESCE(SUM(tx.${this.getPropertyName(field)}), 0)`,
+          'result',
+        );
+        break;
+      case 'count':
+        queryBuilder.select('COUNT(*)', 'result');
+        break;
+      case 'avg':
+        queryBuilder.select(
+          `COALESCE(AVG(tx.${this.getPropertyName(field)}), 0)`,
+          'result',
+        );
+        break;
+      default:
+        return 0;
+    }
+
+    const result = await queryBuilder.getRawOne<{ result: string }>();
+    return result ? parseFloat(result.result) : 0;
+  }
+
+  private getPropertyName(field: string): string {
+    // Map field names to TypeORM property names
+    const fieldMap: Record<string, string> = {
+      amount: 'amount',
+      amountNormalized: 'amountNormalized',
+    };
+    return fieldMap[field] || 'amountNormalized';
   }
 }

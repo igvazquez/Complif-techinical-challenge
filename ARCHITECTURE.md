@@ -204,6 +204,7 @@ This rules engine is a B2B SaaS compliance platform designed to evaluate financi
 | `TemplateOverridesModule` | Org-specific template customizations | Yes | OrganizationGuard |
 | `RulesModule` | Active rules per organization | Yes | OrganizationGuard |
 | `EngineModule` | Rule evaluation engine | Yes | OrganizationGuard |
+| `TransactionsModule` | Transaction storage & evaluation | Yes | OrganizationGuard |
 
 ### Configuration Inheritance Chain
 
@@ -351,8 +352,13 @@ Fact providers supply dynamic data to rules during evaluation.
 #### Transaction History (`src/engine/facts/transaction-history.fact.ts`)
 - **Fact ID:** `transactionHistory`
 - **Purpose:** Aggregates transaction data over time windows
-- **Status:** Stubbed (returns 0) - will integrate with Transactions module in Phase 5
-- **Params:** `{ accountId, timeWindow, aggregationType }`
+- **Status:** Implemented - queries transactions table with optimized indexes
+- **Params:** `{ aggregation: 'sum'|'count'|'avg', field?: string, timeWindowDays: number, transactionType?: string, accountId?: string }`
+- **Features:**
+  - Automatically gets `accountId` from current transaction context if not specified
+  - Respects `maxTimeWindowDays` configuration (default: 30 days)
+  - Filters out voided and deleted transactions
+  - Supports filtering by transaction type
 
 #### Account Data (`src/engine/facts/account.fact.ts`)
 - **Fact ID:** `accountData`
@@ -385,8 +391,98 @@ The `RuleCacheService` subscribes to `rule.cache.invalidate` events and clears t
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
 | `rule_evaluation_duration_seconds` | Histogram | `organization_id` | Time taken to evaluate rules |
+| `rule_evaluation_total` | Counter | `organization_id`, `status` | Total number of rule evaluations |
+| `rules_evaluated_total` | Counter | `organization_id` | Total number of individual rules evaluated |
 | `rule_cache_hits_total` | Counter | - | Number of cache hits |
 | `rule_cache_misses_total` | Counter | - | Number of cache misses |
+| `transactions_processed_total` | Counter | `organization_id`, `source`, `status` | Total transactions processed (source: api/queue, status: success/evaluation_error) |
+
+---
+
+## Transaction Processing
+
+### Overview
+
+The Transactions module handles storing and evaluating financial transactions. Every transaction submitted through the API or RabbitMQ queue is:
+1. Stored in PostgreSQL
+2. Evaluated against all enabled rules for the organization
+3. Returns evaluation results (triggered events, failed rules, etc.)
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/transactions` | Store and evaluate a transaction |
+| `GET` | `/api/transactions/:id` | Get transaction by ID |
+| `GET` | `/api/transactions` | List transactions (paginated) |
+
+### Transaction Flow
+
+```
+┌─────────────────┐
+│  API Request    │
+│  POST /tx       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Store in DB     │
+│ (PostgreSQL)    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────────┐
+│ Evaluate Rules  │────▶│  Return Result  │
+│ (EngineService) │     │  tx + events    │
+└─────────────────┘     └─────────────────┘
+```
+
+### RabbitMQ Consumer
+
+For async/batch processing, transactions can be submitted via RabbitMQ:
+
+**Queue:** `transactions`
+
+**Message format:**
+```json
+{
+  "organizationId": "uuid",
+  "transaction": {
+    "idAccount": "string",
+    "amount": 1000,
+    "amountNormalized": 1000,
+    "currency": "USD",
+    "type": "CASH_IN",
+    "datetime": "2024-01-15T10:30:00Z",
+    "date": "2024-01-15"
+  }
+}
+```
+
+The consumer:
+- Processes messages from the `transactions` queue
+- Stores transaction and evaluates rules
+- Always acknowledges messages (fail-open behavior)
+- Logs errors for failed processing
+
+### Fail-Open Behavior
+
+Following ADR-010, transaction storage succeeds even if rule evaluation fails:
+- Transaction is always stored first
+- Evaluation errors are logged but don't block the transaction
+- Response includes `evaluation.success: false` with empty events
+- Metrics track `evaluation_error` status
+
+### Database Indexes
+
+Optimized for aggregation queries:
+
+| Index | Columns | Purpose |
+|-------|---------|---------|
+| `idx_tx_org_account_datetime` | `id_organization`, `id_account`, `datetime` | Primary aggregation queries |
+| `idx_tx_org_datetime` | `id_organization`, `datetime` | Organization-wide queries |
+| `idx_tx_org_account_type_datetime` | `id_organization`, `id_account`, `type`, `datetime` | Type-filtered aggregations |
+| `idx_tx_org_external_code` | `id_organization`, `external_code` | Deduplication lookup |
 
 ---
 
