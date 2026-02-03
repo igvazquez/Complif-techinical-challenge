@@ -18,10 +18,14 @@ export interface TransactionHistoryParams {
   accountId?: string;
 }
 
+export interface FactReference {
+  fact: string;
+}
+
 export interface ListLookupParams {
   listType: 'BLACKLIST' | 'WHITELIST';
   entityType: 'ACCOUNT' | 'IP' | 'COUNTRY' | 'DEVICE' | 'EMAIL' | 'PHONE';
-  value: string;
+  value: string | FactReference;
 }
 
 export interface AccountParams {
