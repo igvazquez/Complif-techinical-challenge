@@ -7,6 +7,7 @@ import { RulesService } from '../rules/rules.service';
 import { TransactionHistoryFact } from './facts/transaction-history.fact';
 import { AccountFact } from './facts/account.fact';
 import { ListLookupFact } from './facts/list-lookup.fact';
+import { ListsService } from '../lists/lists.service';
 import { EvaluationContext } from './interfaces';
 import { generateUUID } from '../../test/test-utils';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -78,6 +79,10 @@ describe('EngineService', () => {
       get: jest.fn().mockReturnValue(30),
     };
 
+    const mockListsService = {
+      isInList: jest.fn().mockResolvedValue(false),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EngineService,
@@ -115,6 +120,10 @@ describe('EngineService', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: ListsService,
+          useValue: mockListsService,
         },
       ],
     }).compile();

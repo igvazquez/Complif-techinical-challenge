@@ -13,6 +13,7 @@ Complex modules have their own CLAUDE.md files with detailed patterns:
 - `src/engine/CLAUDE.md` - Rule evaluation, custom operators, fact providers
 - `src/alerts/CLAUDE.md` - Action handlers, deduplication, event processing
 - `src/transactions/CLAUDE.md` - Ingestion flow, queue patterns
+- `src/lists/CLAUDE.md` - Blacklist/whitelist management, list lookups
 
 ## Key Architectural Patterns
 

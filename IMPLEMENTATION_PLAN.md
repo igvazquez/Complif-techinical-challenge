@@ -623,13 +623,25 @@ GET    /metrics                         Prometheus metrics
 **Tests:** ✅ Unit tests (14 tests), E2E tests ready
 **Docs:** ✅ Alert configuration and deduplication behavior documented
 
-### Phase 7: Lists Management
-1. Implement list entries entity
-2. Create CRUD endpoints
-3. Integrate with rule engine (list operators)
+### Phase 7: Lists Management ✅ COMPLETED
+1. ✅ Implement list entries entity
+   - ListEntry entity with ListType (BLACKLIST/WHITELIST) enum
+   - EntityType enum (ACCOUNT, IP, COUNTRY, DEVICE, EMAIL, PHONE)
+   - Unique constraint on (org + listType + entityType + entityValue)
+   - Soft expiration support (expiresAt field)
+2. ✅ Create CRUD endpoints
+   - POST /api/lists - Create entry (409 on duplicate)
+   - GET /api/lists - List with filters (listType, entityType, entityValue)
+   - GET /api/lists/:id - Get by ID
+   - DELETE /api/lists/:id - Remove entry
+   - No update endpoint (immutable entries by design)
+3. ✅ Integrate with rule engine (list operators)
+   - Updated ListLookupFact to use ListsService.isInList()
+   - Updated ListLookupParams interface with listType and entityType
+   - Expiration check in isInList() (expired entries return false)
 
-**Tests:** List service tests, integration with rule engine
-**Docs:** Add blacklist/whitelist examples
+**Tests:** ✅ Unit tests (17 tests), E2E tests (all endpoints)
+**Docs:** ✅ ARCHITECTURE.md, CLAUDE.md, src/lists/CLAUDE.md, src/engine/CLAUDE.md updated
 
 ### Phase 8: Observability & Final Polish
 1. Configure Grafana dashboards (JSON exports)

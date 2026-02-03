@@ -205,6 +205,8 @@ This rules engine is a B2B SaaS compliance platform designed to evaluate financi
 | `RulesModule` | Active rules per organization | Yes | OrganizationGuard |
 | `EngineModule` | Rule evaluation engine | Yes | OrganizationGuard |
 | `TransactionsModule` | Transaction storage & evaluation | Yes | OrganizationGuard |
+| `AlertsModule` | Alert generation & management | Yes | OrganizationGuard |
+| `ListsModule` | Blacklist/whitelist management | Yes | OrganizationGuard |
 
 ### Configuration Inheritance Chain
 
@@ -369,8 +371,12 @@ Fact providers supply dynamic data to rules during evaluation.
 #### List Lookup (`src/engine/facts/list-lookup.fact.ts`)
 - **Fact ID:** `listLookup`
 - **Purpose:** Checks if entity exists in blacklist/whitelist
-- **Status:** Stubbed (returns false) - will integrate with Lists module in Phase 7
-- **Params:** `{ listType, entityType, entityValue }`
+- **Status:** Implemented - queries `list_entries` table via `ListsService`
+- **Params:** `{ listType: 'BLACKLIST'|'WHITELIST', entityType: 'ACCOUNT'|'IP'|'COUNTRY'|'DEVICE'|'EMAIL'|'PHONE', value: string }`
+- **Features:**
+  - Checks expiration (`expiresAt`) - expired entries return `false`
+  - Organization-scoped lookups
+  - Supports all entity types defined in `EntityType` enum
 
 ### Rule Caching
 
