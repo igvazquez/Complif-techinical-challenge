@@ -1,11 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  Type,
+  DynamicModule,
+  ForwardReference,
+  Provider,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 
+type ModuleImport =
+  | Type
+  | DynamicModule
+  | Promise<DynamicModule>
+  | ForwardReference;
+
 export async function createTestingModule(
-  imports: any[] = [],
-  providers: any[] = [],
+  imports: ModuleImport[] = [],
+  providers: Provider[] = [],
 ): Promise<TestingModule> {
   return Test.createTestingModule({
     imports: [

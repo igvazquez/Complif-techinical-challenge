@@ -565,27 +565,63 @@ GET    /metrics                         Prometheus metrics
 - E2E tests: 16 tests for engine evaluation flow
 **Docs:** ✅ Custom operators and facts documented in ARCHITECTURE.md
 
-### Phase 5: Transaction Processing
-1. Implement Transaction entity and storage
-2. Create evaluation endpoint (POST /api/transactions)
-3. Implement synchronous evaluation flow
-4. Set up RabbitMQ consumer for async processing
-5. Implement fail-open error handling
-6. Add evaluation metrics (latency, throughput)
+### Phase 5: Transaction Processing ✅ COMPLETED
+1. ✅ Implement Transaction entity and storage
+   - Full entity with amounts, dates, geo data, device info
+   - Migration with 6 optimized indexes
+2. ✅ Create evaluation endpoint (POST /api/transactions)
+   - Returns transaction + evaluation result
+   - Full Swagger documentation
+3. ✅ Implement synchronous evaluation flow
+   - Transaction saved before evaluation (supports history-based rules)
+   - Integrated with EngineService
+4. ✅ Set up RabbitMQ consumer for async processing
+   - Listens on 'transactions' queue
+   - Manual acknowledgment with durable queue
+5. ✅ Implement fail-open error handling
+   - Service and consumer level error handling
+   - Errors logged, transactions not blocked
+6. ✅ Add evaluation metrics (latency, throughput)
+   - `transactions_processed_total` counter
+   - `rule_evaluation_duration_seconds` histogram
+   - `rule_evaluation_total` counter
+   - `rules_evaluated_total` counter
 
-**Tests:** Evaluation flow integration tests, error handling tests, RabbitMQ consumer tests
-**Docs:** Add transaction evaluation examples to README
+**Tests:** ✅ Unit tests (10+ cases), E2E tests (11+ scenarios)
+**Docs:** ✅ Transaction handling documented
 
-### Phase 6: Alert System
-1. Implement Alert entity
-2. Create alert service with deduplication logic
-3. Implement action handler interface
-4. Implement DB action handler
-5. Create stub handlers for webhook/queue/block
-6. Add alert management endpoints
+### Phase 6: Alert System ✅ COMPLETED
+1. ✅ Implement Alert entity
+   - AlertSeverity enum (LOW, MEDIUM, HIGH, CRITICAL)
+   - AlertCategory enum (AML, FRAUD, COMPLIANCE, UNKNOWN)
+   - AlertStatus enum (OPEN, ACKNOWLEDGED, RESOLVED, FALSE_POSITIVE)
+   - Full entity with hit_count, dedup_key, timestamps, metadata
+2. ✅ Create alert service with deduplication logic
+   - Time window parsing (24h, 7d, etc.)
+   - Window bucket calculation for dedup_key
+   - Upsert logic (create or increment hit_count)
+3. ✅ Implement action handler interface
+   - AlertActionHandler interface with execute() and getType()
+4. ✅ Implement DB action handler
+   - Full implementation that persists alerts
+5. ✅ Create stub handlers for webhook/queue/block
+   - WebhookActionHandler (stub with logging)
+   - QueueActionHandler (stub with logging)
+   - BlockActionHandler (stub with logging)
+6. ✅ Add alert management endpoints
+   - GET /api/alerts (list with filters & pagination)
+   - GET /api/alerts/:id (get alert details)
+   - PATCH /api/alerts/:id (update status)
+7. ✅ Event-driven integration via RabbitMQ
+   - AlertsConsumer listens on 'alerts' queue
+   - TransactionsService publishes alert events after rule evaluation
+8. ✅ Prometheus metrics
+   - alerts_created_total (by organization, severity, category)
+   - alerts_deduplicated_total (by organization)
+   - alert_action_duration_seconds (by action_type, status)
 
-**Tests:** Deduplication logic tests, action handler tests
-**Docs:** Document alert configuration and deduplication behavior
+**Tests:** ✅ Unit tests (14 tests), E2E tests ready
+**Docs:** ✅ Alert configuration and deduplication behavior documented
 
 ### Phase 7: Lists Management
 1. Implement list entries entity

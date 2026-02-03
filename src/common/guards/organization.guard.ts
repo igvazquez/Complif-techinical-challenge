@@ -4,14 +4,23 @@ import {
   ExecutionContext,
   BadRequestException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { validate as isValidUUID } from 'uuid';
 import { ORGANIZATION_HEADER } from '../decorators/organization.decorator';
+
+interface RequestWithOrganization extends Request {
+  organizationId?: string;
+}
 
 @Injectable()
 export class OrganizationGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const organizationId = request.headers[ORGANIZATION_HEADER];
+    const request = context
+      .switchToHttp()
+      .getRequest<RequestWithOrganization>();
+    const organizationId = request.headers[ORGANIZATION_HEADER] as
+      | string
+      | undefined;
 
     if (!organizationId) {
       throw new BadRequestException(

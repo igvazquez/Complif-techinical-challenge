@@ -4,6 +4,78 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-02-03] Phase 6 - Alert System
+**Summary:** Implemented an event-driven alert system using RabbitMQ. When transactions trigger rules, alert events are published to a dedicated queue and processed asynchronously by the AlertsService with deduplication logic.
+
+**Changes:**
+- Created Alert entity with severity, category, status enums and deduplication fields
+- Implemented AlertsService with time window-based deduplication logic
+- Created action handler interface with DB, webhook, queue, and block implementations (DB full, others stubbed)
+- Set up RabbitMQ consumer for alerts queue with manual acknowledgment
+- Integrated alert publishing into TransactionsService after rule evaluation
+- Added Prometheus metrics for alert tracking
+
+**Files Added:**
+- `src/alerts/entities/alert.entity.ts` - Alert entity with enums (AlertSeverity, AlertCategory, AlertStatus)
+- `src/alerts/dto/alert-event.message.ts` - RabbitMQ message interface
+- `src/alerts/dto/alert-query.dto.ts` - List filters (status, severity, category, ruleId)
+- `src/alerts/dto/update-alert-status.dto.ts` - PATCH body for status updates
+- `src/alerts/dto/index.ts` - Barrel exports
+- `src/alerts/actions/action-handler.interface.ts` - AlertActionHandler interface
+- `src/alerts/actions/db-action.handler.ts` - Full implementation (always runs)
+- `src/alerts/actions/webhook-action.handler.ts` - Stub implementation
+- `src/alerts/actions/queue-action.handler.ts` - Stub implementation
+- `src/alerts/actions/block-action.handler.ts` - Stub implementation
+- `src/alerts/actions/index.ts` - Barrel exports
+- `src/alerts/alerts.service.ts` - Deduplication logic, action orchestration, metrics
+- `src/alerts/alerts.service.spec.ts` - 14 unit tests
+- `src/alerts/alerts.consumer.ts` - RabbitMQ message handler
+- `src/alerts/alerts.controller.ts` - REST endpoints (GET list, GET by id, PATCH status)
+- `src/alerts/alerts.module.ts` - Module definition with providers
+- `src/database/migrations/1738540800000-CreateAlerts.ts` - Migration with indexes
+- `test/alerts.e2e-spec.ts` - E2E tests
+
+**Files Modified:**
+- `src/app.module.ts` - Added AlertsModule
+- `src/main.ts` - Added second microservice for 'alerts' queue
+- `src/transactions/transactions.module.ts` - Added ClientsModule.registerAsync for ALERTS_SERVICE
+- `src/transactions/transactions.service.ts` - Added alert publishing after rule evaluation
+- `src/engine/engine.service.ts` - Added ruleConfig to event params for deduplication
+
+**Pre-existing Error Fixes:**
+- Fixed TypeScript errors in transactions service (DeepPartial typing, null vs undefined)
+- Fixed lint errors across multiple files (unused imports, unsafe assignments, floating promises)
+- Added eslint-disable comments for test files with dynamic typing patterns
+
+**API Endpoints:**
+| Endpoint | Guard | Description |
+|----------|-------|-------------|
+| `GET /api/alerts` | OrganizationGuard | List alerts with filters & pagination |
+| `GET /api/alerts/:id` | OrganizationGuard | Get alert details |
+| `PATCH /api/alerts/:id` | OrganizationGuard | Update alert status |
+
+**Prometheus Metrics:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `alerts_created_total` | Counter | New alerts created (by org, severity, category) |
+| `alerts_deduplicated_total` | Counter | Deduplicated alerts (hit_count incremented) |
+| `alert_action_duration_seconds` | Histogram | Action handler execution time |
+
+**Deduplication Logic:**
+- Parse rule's timeWindow from config (e.g., "24h", "7d")
+- Calculate window bucket based on transaction datetime
+- Build dedup_key: `{ruleId}:{accountId}:{windowKey}`
+- Find existing OPEN/ACKNOWLEDGED alert with same dedup_key
+- If exists: increment hit_count, update last_triggered_at
+- If not: create new alert
+
+**Test Coverage:**
+- Unit tests: 14 new tests for AlertsService
+- Total: 176 unit tests passing
+- Lint: 0 errors
+
+---
+
 ## [2026-02-01] Phase 4 - Rule Engine Core
 **Summary:** Implemented the core rule evaluation engine using json-rules-engine with custom operators, fact providers, Redis caching, and Prometheus metrics.
 

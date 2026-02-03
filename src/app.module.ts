@@ -11,6 +11,7 @@ import { TemplateOverridesModule } from './template-overrides';
 import { RulesModule } from './rules';
 import { EngineModule } from './engine';
 import { TransactionsModule } from './transactions/transactions.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     RulesModule,
     EngineModule,
     TransactionsModule,
+    AlertsModule,
   ],
 })
 export class AppModule {}
