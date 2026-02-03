@@ -330,6 +330,8 @@ The engine extends json-rules-engine with custom operators for compliance-specif
 | `sumGreaterThan` | Check if sum exceeds threshold | `{ operator: "sumGreaterThan", value: 10000 }` |
 | `countGreaterThan` | Check if count exceeds threshold | `{ operator: "countGreaterThan", value: 5 }` |
 | `avgGreaterThan` | Check if average exceeds threshold | `{ operator: "avgGreaterThan", value: 1000 }` |
+| `maxGreaterThan` | Check if max exceeds threshold | `{ operator: "maxGreaterThan", value: 50000 }` |
+| `minLessThan` | Check if min is below threshold | `{ operator: "minLessThan", value: 100 }` |
 
 #### List Operators (`src/engine/operators/list.operator.ts`)
 
@@ -355,7 +357,7 @@ Fact providers supply dynamic data to rules during evaluation.
 - **Fact ID:** `transactionHistory`
 - **Purpose:** Aggregates transaction data over time windows
 - **Status:** Implemented - queries transactions table with optimized indexes
-- **Params:** `{ aggregation: 'sum'|'count'|'avg', field?: string, timeWindowDays: number, transactionType?: string, accountId?: string }`
+- **Params:** `{ aggregation: 'sum'|'count'|'avg'|'max'|'min', field?: string, timeWindowDays: number, transactionType?: string, accountId?: string }`
 - **Features:**
   - Automatically gets `accountId` from current transaction context if not specified
   - Respects `maxTimeWindowDays` configuration (default: 30 days)

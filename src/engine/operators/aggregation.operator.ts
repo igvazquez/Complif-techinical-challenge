@@ -60,6 +60,46 @@ export const avgGreaterThanOrEqual = new Operator(
   },
 );
 
+export const maxGreaterThan = new Operator(
+  'maxGreaterThan',
+  (factValue: number, compareValue: number): boolean => {
+    if (typeof factValue !== 'number' || typeof compareValue !== 'number') {
+      return false;
+    }
+    return factValue > compareValue;
+  },
+);
+
+export const maxGreaterThanOrEqual = new Operator(
+  'maxGreaterThanOrEqual',
+  (factValue: number, compareValue: number): boolean => {
+    if (typeof factValue !== 'number' || typeof compareValue !== 'number') {
+      return false;
+    }
+    return factValue >= compareValue;
+  },
+);
+
+export const minLessThan = new Operator(
+  'minLessThan',
+  (factValue: number, compareValue: number): boolean => {
+    if (typeof factValue !== 'number' || typeof compareValue !== 'number') {
+      return false;
+    }
+    return factValue < compareValue;
+  },
+);
+
+export const minLessThanOrEqual = new Operator(
+  'minLessThanOrEqual',
+  (factValue: number, compareValue: number): boolean => {
+    if (typeof factValue !== 'number' || typeof compareValue !== 'number') {
+      return false;
+    }
+    return factValue <= compareValue;
+  },
+);
+
 export const aggregationOperators = [
   sumGreaterThan,
   sumGreaterThanOrEqual,
@@ -67,4 +107,8 @@ export const aggregationOperators = [
   countGreaterThanOrEqual,
   avgGreaterThan,
   avgGreaterThanOrEqual,
+  maxGreaterThan,
+  maxGreaterThanOrEqual,
+  minLessThan,
+  minLessThanOrEqual,
 ];

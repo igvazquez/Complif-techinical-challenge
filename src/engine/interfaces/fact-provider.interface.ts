@@ -11,7 +11,7 @@ export interface FactProvider<TParams = unknown, TResult = unknown> {
 }
 
 export interface TransactionHistoryParams {
-  aggregation: 'sum' | 'count' | 'avg';
+  aggregation: 'sum' | 'count' | 'avg' | 'max' | 'min';
   field?: string;
   timeWindowDays: number;
   transactionType?: string;

@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-02-03] Feature - MAX/MIN Aggregation Operators
+**Summary:** Added MAX and MIN aggregation operators to complete the aggregation requirements for the rule engine.
+
+**Changes:**
+- Extended `TransactionHistoryParams.aggregation` type to include `'max' | 'min'`
+- Added `max` and `min` cases to transaction history fact SQL queries
+- Created 4 new operators: `maxGreaterThan`, `maxGreaterThanOrEqual`, `minLessThan`, `minLessThanOrEqual`
+- Added comprehensive unit tests for all new operators (16 new test cases)
+
+**Files Modified:**
+- `src/engine/interfaces/fact-provider.interface.ts` - Extended aggregation type
+- `src/engine/facts/transaction-history.fact.ts` - Added MAX/MIN SQL aggregation cases
+- `src/engine/operators/aggregation.operator.ts` - Added 4 new operators
+- `src/engine/operators/aggregation.operator.spec.ts` - Added tests for new operators
+- `ARCHITECTURE.md` - Updated documentation
+
+**Example Rule Config:**
+```json
+{
+  "conditions": {
+    "all": [
+      {
+        "fact": "transactionHistory",
+        "params": {
+          "aggregation": "max",
+          "field": "amountNormalized",
+          "timeWindowDays": 30
+        },
+        "operator": "maxGreaterThan",
+        "value": 50000
+      }
+    ]
+  }
+}
+```
+
+**Test Coverage:**
+- Unit tests: 33 passing (16 new for MAX/MIN operators)
+- E2E tests: 145 passing
+
+---
+
 ## [2026-02-03] Phase 6 - Alert System
 **Summary:** Implemented an event-driven alert system using RabbitMQ. When transactions trigger rules, alert events are published to a dedicated queue and processed asynchronously by the AlertsService with deduplication logic.
 

@@ -95,6 +95,18 @@ export class TransactionHistoryFact implements FactProvider<
           'result',
         );
         break;
+      case 'max':
+        queryBuilder.select(
+          `COALESCE(MAX(tx.${this.getPropertyName(field)}), 0)`,
+          'result',
+        );
+        break;
+      case 'min':
+        queryBuilder.select(
+          `COALESCE(MIN(tx.${this.getPropertyName(field)}), 0)`,
+          'result',
+        );
+        break;
       default:
         return 0;
     }
