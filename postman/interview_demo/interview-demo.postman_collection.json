@@ -1,0 +1,2027 @@
+{
+  "info": {
+    "_postman_id": "interview-demo-collection",
+    "name": "Interview Demo - Rules Engine",
+    "description": "Comprehensive demonstration of the Rules Engine capabilities for interview purposes.\n\nThis collection demonstrates:\n- All rule types (Amount, Quantity, Velocity, Geolocation, Lists)\n- All aggregation operators (SUM, COUNT, AVG, MAX, MIN)\n- All logical operators (AND, OR, Nested, NOT)\n\nEach section includes:\n- Rule creation\n- Test that TRIGGERS the rule\n- Test that DOES NOT trigger the rule\n- Alert verification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Setup",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Application is healthy', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.equal('ok');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Create Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Organization created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.id).to.be.a('string');",
+                  "    pm.environment.set('organizationId', response.id);",
+                  "    console.log('Organization ID:', response.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Interview Demo Organization\",\n  \"settings\": {\n    \"alertEmail\": \"demo@interview.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organizations"]
+            }
+          }
+        }
+      ],
+      "description": "Initial setup: health check and organization creation."
+    },
+    {
+      "name": "2. Rule Types",
+      "item": [
+        {
+          "name": "2.1 Amount - High Amount Threshold",
+          "item": [
+            {
+              "name": "Create Rule - High Amount (>$10,000)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.id).to.be.a('string');",
+                      "    pm.expect(response.name).to.equal('High Amount Transaction Alert');",
+                      "    pm.environment.set('amountRuleId', response.id);",
+                      "    console.log('Amount Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"High Amount Transaction Alert\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 10000\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"AML\",\n        \"message\": \"Transaction amount exceeds $10,000 threshold\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Amount $15,000",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Alert generated', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    pm.expect(response.evaluation.events).to.be.an('array');",
+                      "    pm.expect(response.evaluation.events.length).to.be.greaterThan(0);",
+                      "    ",
+                      "    const alertEvent = response.evaluation.events.find(e => e.type === 'alert');",
+                      "    pm.expect(alertEvent).to.exist;",
+                      "    pm.expect(alertEvent.params.severity).to.equal('HIGH');",
+                      "    pm.expect(alertEvent.params.category).to.equal('AML');",
+                      "    console.log('Alert generated:', JSON.stringify(alertEvent, null, 2));",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-amount-test-001\",\n  \"amount\": 15000,\n  \"amountNormalized\": 15000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"2024-01-15T10:30:00Z\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test DOES NOT TRIGGER - Amount $5,000",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule NOT triggered - No alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    pm.expect(response.evaluation.events).to.be.an('array');",
+                      "    ",
+                      "    // Filter for alert events from our specific rule",
+                      "    const amountAlerts = response.evaluation.events.filter(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('$10,000')",
+                      "    );",
+                      "    pm.expect(amountAlerts.length).to.equal(0);",
+                      "    console.log('No amount threshold alert - correct behavior');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-amount-test-002\",\n  \"amount\": 5000,\n  \"amountNormalized\": 5000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"2024-01-15T10:35:00Z\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests the most basic rule type: threshold-based amount detection.\n\n**Rule**: Alert when transaction amount > $10,000\n**Use Case**: Regulatory reporting threshold detection (e.g., CTR filing requirement)"
+        },
+        {
+          "name": "2.2 Quantity - Transaction Count",
+          "item": [
+            {
+              "name": "Create Rule - High Frequency (>5 in 7 days)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('quantityRuleId', response.id);",
+                      "    console.log('Quantity Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"High Transaction Frequency\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transactionHistory\",\n          \"operator\": \"countGreaterThan\",\n          \"value\": 5,\n          \"params\": {\n            \"aggregation\": \"count\",\n            \"timeWindowDays\": 7\n          }\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"MEDIUM\",\n        \"category\": \"FRAUD\",\n        \"message\": \"Account has more than 5 transactions in 7 days\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Setup - Transaction 1 of 5",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction 1 created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('Transaction 1/5 created for quantity test');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-quantity-test\",\n  \"amount\": 100,\n  \"amountNormalized\": 100,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Setup - Transaction 2 of 5",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction 2 created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('Transaction 2/5 created for quantity test');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-quantity-test\",\n  \"amount\": 150,\n  \"amountNormalized\": 150,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Setup - Transaction 3 of 5",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction 3 created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('Transaction 3/5 created for quantity test');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-quantity-test\",\n  \"amount\": 200,\n  \"amountNormalized\": 200,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Setup - Transaction 4 of 5",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction 4 created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('Transaction 4/5 created for quantity test');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-quantity-test\",\n  \"amount\": 250,\n  \"amountNormalized\": 250,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Setup - Transaction 5 of 5",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction 5 created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('Transaction 5/5 created - next transaction should trigger!');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-quantity-test\",\n  \"amount\": 300,\n  \"amountNormalized\": 300,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - 6th Transaction",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - High frequency alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const freqAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('5 transactions')",
+                      "    );",
+                      "    pm.expect(freqAlert).to.exist;",
+                      "    pm.expect(freqAlert.params.severity).to.equal('MEDIUM');",
+                      "    pm.expect(freqAlert.params.category).to.equal('FRAUD');",
+                      "    console.log('Frequency alert triggered on 6th transaction!');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-quantity-test\",\n  \"amount\": 100,\n  \"amountNormalized\": 100,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests COUNT aggregation for transaction frequency detection.\n\n**Rule**: Alert when account has >5 transactions in 7 days\n**Use Case**: Unusual activity pattern detection"
+        },
+        {
+          "name": "2.3 Velocity - Accumulated Amount",
+          "item": [
+            {
+              "name": "Create Rule - Accumulated Amount (>$50,000 in 7 days)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('velocityRuleId', response.id);",
+                      "    console.log('Velocity Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Accumulated Amount Threshold\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transactionHistory\",\n          \"operator\": \"sumGreaterThan\",\n          \"value\": 50000,\n          \"params\": {\n            \"aggregation\": \"sum\",\n            \"field\": \"amountNormalized\",\n            \"timeWindowDays\": 7\n          }\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"AML\",\n        \"message\": \"Accumulated amount exceeds $50,000 in 7 days - possible structuring\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Setup - Create $40,000 Transaction",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('$40,000 transaction created - next $15k will push over $50k threshold');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-velocity-test\",\n  \"amount\": 40000,\n  \"amountNormalized\": 40000,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-14\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Pushes Total Over $50,000",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Accumulated amount alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const velocityAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('structuring')",
+                      "    );",
+                      "    pm.expect(velocityAlert).to.exist;",
+                      "    pm.expect(velocityAlert.params.severity).to.equal('HIGH');",
+                      "    pm.expect(velocityAlert.params.category).to.equal('AML');",
+                      "    console.log('Velocity alert triggered! Total exceeded $50,000');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-velocity-test\",\n  \"amount\": 15000,\n  \"amountNormalized\": 15000,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests SUM aggregation for accumulated amount detection (velocity).\n\n**Rule**: Alert when accumulated amount > $50,000 in 7 days\n**Use Case**: Structuring detection - criminals split large amounts into smaller transactions to avoid reporting thresholds"
+        },
+        {
+          "name": "2.4 Geolocation - High Risk Country",
+          "item": [
+            {
+              "name": "Create Rule - High Risk Country",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('geoRuleId', response.id);",
+                      "    console.log('Geolocation Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"High Risk Country Transaction\",\n  \"enabled\": true,\n  \"priority\": 50,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.country\",\n          \"operator\": \"isHighRiskCountry\",\n          \"value\": [\"IR\", \"KP\", \"SY\", \"CU\", \"VE\"]\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"CRITICAL\",\n        \"category\": \"COMPLIANCE\",\n        \"message\": \"Transaction originated from high-risk country\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Country Iran (IR)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - High risk country alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const geoAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('high-risk country')",
+                      "    );",
+                      "    pm.expect(geoAlert).to.exist;",
+                      "    pm.expect(geoAlert.params.severity).to.equal('CRITICAL');",
+                      "    pm.expect(geoAlert.params.category).to.equal('COMPLIANCE');",
+                      "    console.log('CRITICAL alert for high-risk country (Iran)');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-geo-test\",\n  \"amount\": 1000,\n  \"amountNormalized\": 1000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"IR\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test DOES NOT TRIGGER - Country US",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule NOT triggered - US is safe country', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const geoAlerts = response.evaluation.events.filter(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('high-risk country')",
+                      "    );",
+                      "    pm.expect(geoAlerts.length).to.equal(0);",
+                      "    console.log('No high-risk country alert for US - correct behavior');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-geo-test-safe\",\n  \"amount\": 1000,\n  \"amountNormalized\": 1000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests geolocation-based rules for country risk assessment.\n\n**Rule**: Alert for transactions from sanctioned/high-risk countries\n**Use Case**: OFAC sanctions compliance, regulatory requirements"
+        },
+        {
+          "name": "2.5 Lists - Blacklist Check",
+          "item": [
+            {
+              "name": "Add Account to Blacklist",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Blacklist entry created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('blacklistEntryId', response.id);",
+                      "    console.log('Account blocked-account-999 added to blacklist');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"listType\": \"BLACKLIST\",\n  \"entityType\": \"ACCOUNT\",\n  \"entityValue\": \"blocked-account-999\",\n  \"reason\": \"Fraudulent activity confirmed\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/lists",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "lists"]
+                }
+              }
+            },
+            {
+              "name": "Create Rule - Blacklisted Account",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('blacklistRuleId', response.id);",
+                      "    console.log('Blacklist Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Blacklisted Account Alert\",\n  \"enabled\": true,\n  \"priority\": 10,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"listLookup\",\n          \"operator\": \"equal\",\n          \"value\": true,\n          \"params\": {\n            \"listType\": \"BLACKLIST\",\n            \"entityType\": \"ACCOUNT\",\n            \"value\": { \"fact\": \"transaction.idAccount\" }\n          }\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"CRITICAL\",\n        \"category\": \"FRAUD\",\n        \"message\": \"Transaction from blacklisted account\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Blacklisted Account",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Blacklisted account alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const blacklistAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('blacklisted')",
+                      "    );",
+                      "    pm.expect(blacklistAlert).to.exist;",
+                      "    pm.expect(blacklistAlert.params.severity).to.equal('CRITICAL');",
+                      "    pm.expect(blacklistAlert.params.category).to.equal('FRAUD');",
+                      "    console.log('CRITICAL alert for blacklisted account!');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"blocked-account-999\",\n  \"amount\": 100,\n  \"amountNormalized\": 100,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test DOES NOT TRIGGER - Normal Account",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule NOT triggered - Account not blacklisted', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const blacklistAlerts = response.evaluation.events.filter(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('blacklisted')",
+                      "    );",
+                      "    pm.expect(blacklistAlerts.length).to.equal(0);",
+                      "    console.log('No blacklist alert for normal account - correct behavior');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"normal-account-001\",\n  \"amount\": 100,\n  \"amountNormalized\": 100,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests list-based rules using blacklist/whitelist lookups.\n\n**Rule**: Alert for transactions from blacklisted accounts\n**Use Case**: Known fraudster blocking, sanctions list enforcement"
+        }
+      ],
+      "description": "Demonstrates all 5 core rule types: Amount, Quantity, Velocity, Geolocation, and Lists."
+    },
+    {
+      "name": "3. Aggregations",
+      "item": [
+        {
+          "name": "3.1 AVG - Average Transaction Size",
+          "item": [
+            {
+              "name": "Create Rule - High Average (>$5,000)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('avgRuleId', response.id);",
+                      "    console.log('AVG Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"High Average Transaction Size\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transactionHistory\",\n          \"operator\": \"avgGreaterThan\",\n          \"value\": 5000,\n          \"params\": {\n            \"aggregation\": \"avg\",\n            \"field\": \"amountNormalized\",\n            \"timeWindowDays\": 7\n          }\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"MEDIUM\",\n        \"category\": \"AML\",\n        \"message\": \"Average transaction amount exceeds $5,000\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Setup - $8,000 Transaction",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Setup transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    console.log('$8,000 transaction created for AVG test');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-avg-test\",\n  \"amount\": 8000,\n  \"amountNormalized\": 8000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-14\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Average >$5,000",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - High average alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const avgAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('Average transaction')",
+                      "    );",
+                      "    pm.expect(avgAlert).to.exist;",
+                      "    console.log('AVG alert triggered! Average > $5,000');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-avg-test\",\n  \"amount\": 7000,\n  \"amountNormalized\": 7000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests AVG aggregation for average transaction size monitoring.\n\n**Rule**: Alert when average transaction > $5,000\n**Use Case**: Detecting accounts with unusually high transaction patterns"
+        },
+        {
+          "name": "3.2 MAX - Largest Transaction Detection",
+          "item": [
+            {
+              "name": "Create Rule - Max Transaction (>$25,000)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('maxRuleId', response.id);",
+                      "    console.log('MAX Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Large Single Transaction History\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transactionHistory\",\n          \"operator\": \"maxGreaterThan\",\n          \"value\": 25000,\n          \"params\": {\n            \"aggregation\": \"max\",\n            \"field\": \"amountNormalized\",\n            \"timeWindowDays\": 7\n          }\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"AML\",\n        \"message\": \"Account had a transaction > $25,000 in past 7 days\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - $30,000 Transaction",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Max threshold alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const maxAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('$25,000')",
+                      "    );",
+                      "    pm.expect(maxAlert).to.exist;",
+                      "    console.log('MAX alert triggered! Transaction > $25,000');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-max-test\",\n  \"amount\": 30000,\n  \"amountNormalized\": 30000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests MAX aggregation for detecting large single transactions.\n\n**Rule**: Alert when max transaction > $25,000 in 7 days\n**Use Case**: Detecting significant individual transactions in account history"
+        },
+        {
+          "name": "3.3 MIN - Micro Transaction Detection",
+          "item": [
+            {
+              "name": "Create Rule - Micro Transaction (<$10)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('minRuleId', response.id);",
+                      "    console.log('MIN Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Micro Transaction Pattern\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transactionHistory\",\n          \"operator\": \"minLessThan\",\n          \"value\": 10,\n          \"params\": {\n            \"aggregation\": \"min\",\n            \"field\": \"amountNormalized\",\n            \"timeWindowDays\": 7\n          }\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"LOW\",\n        \"category\": \"FRAUD\",\n        \"message\": \"Account has micro-transactions - possible testing pattern\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - $1 Transaction",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Micro transaction alert', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const minAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('micro-transactions')",
+                      "    );",
+                      "    pm.expect(minAlert).to.exist;",
+                      "    pm.expect(minAlert.params.severity).to.equal('LOW');",
+                      "    console.log('MIN alert triggered! Micro-transaction detected');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-min-test\",\n  \"amount\": 1,\n  \"amountNormalized\": 1,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests MIN aggregation for detecting micro-transactions.\n\n**Rule**: Alert when min transaction < $10 in 7 days\n**Use Case**: Credit card testing fraud detection - criminals test stolen cards with small amounts"
+        }
+      ],
+      "description": "Demonstrates aggregation operators: SUM (in velocity), COUNT (in quantity), AVG, MAX, MIN."
+    },
+    {
+      "name": "4. Logical Operators",
+      "item": [
+        {
+          "name": "4.1 AND (all) - Multiple Conditions",
+          "item": [
+            {
+              "name": "Create Rule - High Amount AND Non-Approved Country",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('andRuleId', response.id);",
+                      "    console.log('AND Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"High Amount from Non-Approved Country\",\n  \"enabled\": true,\n  \"priority\": 50,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 5000\n        },\n        {\n          \"fact\": \"transaction.country\",\n          \"operator\": \"notInCountry\",\n          \"value\": [\"AR\", \"UY\", \"CL\", \"BR\", \"US\"]\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"COMPLIANCE\",\n        \"message\": \"High amount transaction from non-approved country\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - $10,000 from Russia",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Both conditions met', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const andAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('non-approved country')",
+                      "    );",
+                      "    pm.expect(andAlert).to.exist;",
+                      "    console.log('AND rule triggered! Both conditions (amount>$5k AND country not approved) met');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-and-test\",\n  \"amount\": 10000,\n  \"amountNormalized\": 10000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"RU\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test DOES NOT TRIGGER - $10,000 from US",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule NOT triggered - Country is approved', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const andAlerts = response.evaluation.events.filter(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('non-approved country')",
+                      "    );",
+                      "    pm.expect(andAlerts.length).to.equal(0);",
+                      "    console.log('No alert - US is an approved country (one condition not met)');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-and-test-2\",\n  \"amount\": 10000,\n  \"amountNormalized\": 10000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests AND logic where ALL conditions must be true.\n\n**Rule**: Alert when amount > $5,000 AND country is not in approved list\n**Use Case**: Risk-adjusted monitoring based on multiple factors"
+        },
+        {
+          "name": "4.2 OR (any) - Alternative Conditions",
+          "item": [
+            {
+              "name": "Create Rule - High Amount OR Sanctioned Country",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('orRuleId', response.id);",
+                      "    console.log('OR Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"High Amount OR Sanctioned Country\",\n  \"enabled\": true,\n  \"priority\": 50,\n  \"config\": {\n    \"conditions\": {\n      \"any\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 20000\n        },\n        {\n          \"fact\": \"transaction.country\",\n          \"operator\": \"inCountry\",\n          \"value\": [\"KP\", \"IR\", \"SY\"]\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"AML\",\n        \"message\": \"High amount OR sanctioned country detected\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Amount >$20,000 (first condition)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - First condition met (amount)', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const orAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('High amount OR sanctioned')",
+                      "    );",
+                      "    pm.expect(orAlert).to.exist;",
+                      "    console.log('OR rule triggered by amount condition (>$20k)');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-or-test-1\",\n  \"amount\": 25000,\n  \"amountNormalized\": 25000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Sanctioned Country (second condition)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Second condition met (country)', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const orAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('High amount OR sanctioned')",
+                      "    );",
+                      "    pm.expect(orAlert).to.exist;",
+                      "    console.log('OR rule triggered by country condition (North Korea)');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-or-test-2\",\n  \"amount\": 100,\n  \"amountNormalized\": 100,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"KP\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests OR logic where ANY condition can trigger.\n\n**Rule**: Alert when amount > $20,000 OR country is sanctioned\n**Use Case**: Multiple independent risk factors"
+        },
+        {
+          "name": "4.3 Nested - AND within OR",
+          "item": [
+            {
+              "name": "Create Rule - Complex Nested Logic",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('nestedRuleId', response.id);",
+                      "    console.log('Nested Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Complex Compliance Rule\",\n  \"enabled\": true,\n  \"priority\": 25,\n  \"config\": {\n    \"conditions\": {\n      \"any\": [\n        {\n          \"all\": [\n            {\n              \"fact\": \"transaction.amount\",\n              \"operator\": \"greaterThan\",\n              \"value\": 15000\n            },\n            {\n              \"fact\": \"transaction.type\",\n              \"operator\": \"equal\",\n              \"value\": \"CASH_OUT\"\n            }\n          ]\n        },\n        {\n          \"fact\": \"transaction.country\",\n          \"operator\": \"isHighRiskCountry\",\n          \"value\": [\"IR\", \"KP\", \"SY\", \"CU\"]\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"CRITICAL\",\n        \"category\": \"COMPLIANCE\",\n        \"message\": \"Complex compliance violation: large CASH_OUT or high-risk country\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Large CASH_OUT (nested AND)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Nested AND condition met', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const nestedAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('Complex compliance')",
+                      "    );",
+                      "    pm.expect(nestedAlert).to.exist;",
+                      "    pm.expect(nestedAlert.params.severity).to.equal('CRITICAL');",
+                      "    console.log('Nested rule triggered! (amount > $15k AND type = CASH_OUT)');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-nested-test\",\n  \"amount\": 20000,\n  \"amountNormalized\": 20000,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_OUT\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            },
+            {
+              "name": "Test DOES NOT TRIGGER - Large CASH_IN (wrong type)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule NOT triggered - Type is CASH_IN not CASH_OUT', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const nestedAlerts = response.evaluation.events.filter(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('Complex compliance')",
+                      "    );",
+                      "    pm.expect(nestedAlerts.length).to.equal(0);",
+                      "    console.log('No alert - CASH_IN does not trigger the nested AND (requires CASH_OUT)');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-nested-test-2\",\n  \"amount\": 20000,\n  \"amountNormalized\": 20000,\n  \"currency\": \"USD\",\n  \"type\": \"CASH_IN\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests nested logical operators (AND within OR).\n\n**Rule**: Alert if (amount > $15,000 AND type = CASH_OUT) OR (high-risk country)\n**Use Case**: Complex compliance rules combining multiple risk factors"
+        },
+        {
+          "name": "4.4 NOT - Negation Operators",
+          "item": [
+            {
+              "name": "Create Rule - Not In Approved Countries",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Rule created successfully', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.environment.set('notRuleId', response.id);",
+                      "    console.log('NOT Rule ID:', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Non-Approved Country Transaction\",\n  \"enabled\": true,\n  \"priority\": 100,\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.country\",\n          \"operator\": \"notInCountry\",\n          \"value\": [\"AR\", \"UY\", \"CL\", \"BR\", \"US\", \"MX\", \"CO\", \"PE\"]\n        },\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 1000\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"MEDIUM\",\n        \"category\": \"COMPLIANCE\",\n        \"message\": \"Transaction from non-approved country exceeds $1,000\"\n      }\n    }\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "rules"]
+                }
+              }
+            },
+            {
+              "name": "Test TRIGGERS - Not in Approved List",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Transaction created', function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Rule TRIGGERED - Country not in approved list', function () {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.evaluation).to.exist;",
+                      "    ",
+                      "    const notAlert = response.evaluation.events.find(",
+                      "        e => e.type === 'alert' && e.params.message && e.params.message.includes('non-approved country')",
+                      "    );",
+                      "    pm.expect(notAlert).to.exist;",
+                      "    console.log('NOT rule triggered - Germany is not in approved list');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-organization-id",
+                    "value": "{{organizationId}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAccount\": \"acc-not-test\",\n  \"amount\": 5000,\n  \"amountNormalized\": 5000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"{{$isoTimestamp}}\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"DE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "transactions"]
+                }
+              }
+            }
+          ],
+          "description": "Tests negation operators (notInCountry, notInBlacklist, etc.).\n\n**Rule**: Alert when country is NOT in approved list AND amount > $1,000\n**Use Case**: Restricting operations to specific jurisdictions"
+        }
+      ],
+      "description": "Demonstrates logical operators: AND (all), OR (any), Nested combinations, and NOT operators."
+    },
+    {
+      "name": "5. Verification",
+      "item": [
+        {
+          "name": "List All Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Alerts retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "    console.log('Total alerts:', response.pagination.total);",
+                  "    ",
+                  "    // Log alert summary",
+                  "    response.data.forEach((alert, i) => {",
+                  "        console.log(`Alert ${i+1}: ${alert.severity} - ${alert.category} - ${alert.message.substring(0, 50)}...`);",
+                  "    });",
+                  "    ",
+                  "    if (response.data.length > 0) {",
+                  "        pm.environment.set('alertId', response.data[0].id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Specific Alert Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Alert details retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const alert = pm.response.json();",
+                  "    ",
+                  "    console.log('Alert ID:', alert.id);",
+                  "    console.log('Status:', alert.status);",
+                  "    console.log('Severity:', alert.severity);",
+                  "    console.log('Category:', alert.category);",
+                  "    console.log('Hit Count:', alert.hitCount);",
+                  "    console.log('Message:', alert.message);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts", "{{alertId}}"]
+            }
+          }
+        },
+        {
+          "name": "List All Rules Created",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rules retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "    console.log('Total rules:', response.pagination.total);",
+                  "    ",
+                  "    response.data.forEach((rule, i) => {",
+                  "        console.log(`Rule ${i+1}: ${rule.name} (Priority: ${rule.priority}, Enabled: ${rule.enabled})`);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules"]
+            }
+          }
+        }
+      ],
+      "description": "Verify all alerts and rules created during the demo."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
