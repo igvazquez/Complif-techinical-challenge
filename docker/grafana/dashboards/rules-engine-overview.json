@@ -18,7 +18,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -52,7 +52,7 @@
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "rate(transactions_processed_total[1m])",
           "legendFormat": "Transactions/sec",
           "refId": "A"
@@ -62,7 +62,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -96,7 +96,7 @@
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.99, sum(rate(rule_evaluation_duration_seconds_bucket[5m])) by (le))",
           "legendFormat": "p99 Latency",
           "refId": "A"
@@ -106,7 +106,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -140,7 +140,7 @@
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum(rate(rule_cache_total{result=\"hit\"}[5m])) / sum(rate(rule_cache_total[5m]))",
           "legendFormat": "Cache Hit Ratio",
           "refId": "A"
@@ -150,7 +150,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -184,7 +184,7 @@
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum(rate(rule_evaluation_total{status=\"error\"}[5m])) / sum(rate(rule_evaluation_total[5m]))",
           "legendFormat": "Error Rate",
           "refId": "A"
@@ -202,7 +202,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -242,7 +242,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "rate(transactions_processed_total[1m])",
           "legendFormat": "Transactions/sec",
           "refId": "A"
@@ -252,7 +252,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -292,7 +292,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "increase(transactions_processed_total[1m])",
           "legendFormat": "{{organization_id}}",
           "refId": "A"
@@ -310,7 +310,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -353,19 +353,19 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.50, sum(rate(rule_evaluation_duration_seconds_bucket[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.90, sum(rate(rule_evaluation_duration_seconds_bucket[5m])) by (le))",
           "legendFormat": "p90",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.99, sum(rate(rule_evaluation_duration_seconds_bucket[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
@@ -375,7 +375,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -407,7 +407,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum by (status) (increase(rule_evaluation_total[1h]))",
           "legendFormat": "{{status}}",
           "refId": "A"
@@ -425,7 +425,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -474,13 +474,13 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "rate(rule_cache_total{result=\"hit\"}[1m])",
           "legendFormat": "hit",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "rate(rule_cache_total{result=\"miss\"}[1m])",
           "legendFormat": "miss",
           "refId": "B"
@@ -490,7 +490,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -520,7 +520,7 @@
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum(rate(rule_cache_total{result=\"hit\"}[5m])) / sum(rate(rule_cache_total[5m]))",
           "legendFormat": "Hit Ratio",
           "refId": "A"
@@ -538,7 +538,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -595,7 +595,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "increase(alerts_created_total[5m])",
           "legendFormat": "{{severity}}",
           "refId": "A"
@@ -605,7 +605,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -645,7 +645,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "increase(alerts_created_total[5m])",
           "legendFormat": "{{category}}",
           "refId": "A"
@@ -655,7 +655,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -685,7 +685,7 @@
       "pluginVersion": "10.3.3",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum(rate(alerts_deduplicated_total[5m])) / (sum(rate(alerts_created_total[5m])) + sum(rate(alerts_deduplicated_total[5m])))",
           "legendFormat": "Deduplication Rate",
           "refId": "A"
@@ -703,7 +703,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -731,7 +731,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum(increase(alert_action_duration_seconds_bucket[5m])) by (le)",
           "format": "heatmap",
           "legendFormat": "{{le}}",
@@ -742,7 +742,7 @@
       "type": "histogram"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -791,7 +791,7 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "sum by (status) (rate(alert_action_duration_seconds_count[5m]))",
           "legendFormat": "{{status}}",
           "refId": "A"
@@ -809,7 +809,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -849,13 +849,13 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "process_resident_memory_bytes{job=\"rules-engine\"}",
           "legendFormat": "Resident Memory",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "nodejs_heap_size_used_bytes{job=\"rules-engine\"}",
           "legendFormat": "Heap Used",
           "refId": "B"
@@ -865,7 +865,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -905,19 +905,19 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"rules-engine\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket{job=\"rules-engine\"}[5m])) by (le))",
           "legendFormat": "p90",
           "refId": "B"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"rules-engine\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
@@ -927,7 +927,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -967,13 +967,13 @@
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "nodejs_active_handles_total{job=\"rules-engine\"}",
           "legendFormat": "Active Handles",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
           "expr": "nodejs_active_requests_total{job=\"rules-engine\"}",
           "legendFormat": "Active Requests",
           "refId": "B"
@@ -986,7 +986,29 @@
   "refresh": "5s",
   "schemaVersion": 39,
   "tags": ["rules-engine", "transactions", "alerts"],
-  "templating": { "list": [] },
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Data Source",
+        "multi": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
+  },
   "time": { "from": "now-15m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
