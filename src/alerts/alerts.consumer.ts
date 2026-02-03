@@ -1,10 +1,5 @@
 import { Controller } from '@nestjs/common';
-import {
-  MessagePattern,
-  Payload,
-  Ctx,
-  RmqContext,
-} from '@nestjs/microservices';
+import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { AlertsService } from './alerts.service';
 import type { AlertEventMessage } from './dto';
@@ -17,7 +12,7 @@ export class AlertsConsumer {
     private readonly logger: PinoLogger,
   ) {}
 
-  @MessagePattern('alerts')
+  @EventPattern('alerts')
   async handleAlertEvent(
     @Payload() data: AlertEventMessage,
     @Ctx() context: RmqContext,

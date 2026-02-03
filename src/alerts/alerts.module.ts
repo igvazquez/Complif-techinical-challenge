@@ -18,10 +18,9 @@ import {
 
 @Module({
   imports: [TypeOrmModule.forFeature([Alert])],
-  controllers: [AlertsController],
+  controllers: [AlertsController, AlertsConsumer],
   providers: [
     AlertsService,
-    AlertsConsumer,
     // Action handlers
     DbActionHandler,
     WebhookActionHandler,
