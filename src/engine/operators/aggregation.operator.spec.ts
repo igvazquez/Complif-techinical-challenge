@@ -6,6 +6,10 @@ import {
   countGreaterThanOrEqual,
   avgGreaterThan,
   avgGreaterThanOrEqual,
+  maxGreaterThan,
+  maxGreaterThanOrEqual,
+  minLessThan,
+  minLessThanOrEqual,
 } from './aggregation.operator';
 
 describe('Aggregation Operators', () => {
@@ -98,6 +102,90 @@ describe('Aggregation Operators', () => {
 
     it('should return false when average < compareValue', () => {
       expect(avgGreaterThanOrEqual.cb(49.99, 50)).toBe(false);
+    });
+  });
+
+  describe('maxGreaterThan', () => {
+    it('should return true when max > compareValue', () => {
+      expect(maxGreaterThan.cb(100, 50)).toBe(true);
+    });
+
+    it('should return false when max <= compareValue', () => {
+      expect(maxGreaterThan.cb(50, 100)).toBe(false);
+      expect(maxGreaterThan.cb(100, 100)).toBe(false);
+    });
+
+    it('should return false for non-number inputs', () => {
+      expect(maxGreaterThan.cb('100' as unknown as number, 50)).toBe(false);
+      expect(maxGreaterThan.cb(100, '50' as unknown as number)).toBe(false);
+      expect(maxGreaterThan.cb(null as unknown as number, 50)).toBe(false);
+    });
+
+    it('should have correct operator name', () => {
+      expect(maxGreaterThan.name).toBe('maxGreaterThan');
+    });
+  });
+
+  describe('maxGreaterThanOrEqual', () => {
+    it('should return true when max >= compareValue', () => {
+      expect(maxGreaterThanOrEqual.cb(100, 50)).toBe(true);
+      expect(maxGreaterThanOrEqual.cb(100, 100)).toBe(true);
+    });
+
+    it('should return false when max < compareValue', () => {
+      expect(maxGreaterThanOrEqual.cb(50, 100)).toBe(false);
+    });
+
+    it('should return false for non-number inputs', () => {
+      expect(maxGreaterThanOrEqual.cb('100' as unknown as number, 50)).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('minLessThan', () => {
+    it('should return true when min < compareValue', () => {
+      expect(minLessThan.cb(50, 100)).toBe(true);
+    });
+
+    it('should return false when min >= compareValue', () => {
+      expect(minLessThan.cb(100, 50)).toBe(false);
+      expect(minLessThan.cb(100, 100)).toBe(false);
+    });
+
+    it('should return false for non-number inputs', () => {
+      expect(minLessThan.cb('50' as unknown as number, 100)).toBe(false);
+      expect(minLessThan.cb(50, '100' as unknown as number)).toBe(false);
+      expect(minLessThan.cb(null as unknown as number, 100)).toBe(false);
+    });
+
+    it('should have correct operator name', () => {
+      expect(minLessThan.name).toBe('minLessThan');
+    });
+
+    it('should handle zero correctly', () => {
+      expect(minLessThan.cb(0, 1)).toBe(true);
+      expect(minLessThan.cb(0, 0)).toBe(false);
+    });
+  });
+
+  describe('minLessThanOrEqual', () => {
+    it('should return true when min <= compareValue', () => {
+      expect(minLessThanOrEqual.cb(50, 100)).toBe(true);
+      expect(minLessThanOrEqual.cb(100, 100)).toBe(true);
+    });
+
+    it('should return false when min > compareValue', () => {
+      expect(minLessThanOrEqual.cb(100, 50)).toBe(false);
+    });
+
+    it('should return false for non-number inputs', () => {
+      expect(minLessThanOrEqual.cb('50' as unknown as number, 100)).toBe(false);
+    });
+
+    it('should handle decimal values', () => {
+      expect(minLessThanOrEqual.cb(49.999, 50)).toBe(true);
+      expect(minLessThanOrEqual.cb(50.001, 50)).toBe(false);
     });
   });
 });
