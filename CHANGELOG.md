@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-02-03] Test Coverage Improvement to >80%
+**Summary:** Added comprehensive unit tests for all controllers, consumers, and common utilities to achieve 90.51% statement coverage.
+
+**Changes:**
+- Added unit tests for 8 controllers (organizations, alerts, lists, rules, rule-templates, template-overrides, transactions, engine)
+- Added unit tests for 2 consumers (transactions, alerts)
+- Added unit tests for common utilities (OrganizationGuard, AllExceptionsFilter, OrganizationId decorator)
+- Updated Jest configuration to exclude non-business-logic files from coverage
+
+**Files Added:**
+- `src/organizations/organizations.controller.spec.ts` - 5 tests for CRUD operations
+- `src/alerts/alerts.controller.spec.ts` - 4 tests for findAll, findOne, updateStatus
+- `src/alerts/alerts.consumer.spec.ts` - 3 tests for RabbitMQ message handling
+- `src/lists/lists.controller.spec.ts` - 5 tests for create, findAll, findOne, remove
+- `src/rules/rules.controller.spec.ts` - 7 tests for CRUD + getEffectiveConfig + findEnabledByPriority
+- `src/rule-templates/rule-templates.controller.spec.ts` - 6 tests for CRUD + findDefaults
+- `src/template-overrides/template-overrides.controller.spec.ts` - 6 tests for CRUD + getMergedConfig
+- `src/transactions/transactions.controller.spec.ts` - 4 tests for create, findAll, findOne
+- `src/transactions/transactions.consumer.spec.ts` - 3 tests for RabbitMQ message handling
+- `src/engine/engine.controller.spec.ts` - 5 tests for evaluate and evaluateRule
+- `src/common/guards/organization.guard.spec.ts` - 4 tests for guard validation
+- `src/common/filters/http-exception.filter.spec.ts` - 6 tests for exception handling
+- `src/common/decorators/organization.decorator.spec.ts` - 2 tests for decorator
+
+**Files Modified:**
+- `package.json` - Updated Jest `collectCoverageFrom` to exclude main.ts, modules, migrations, config
+
+**Test Coverage Results:**
+| Metric | Before | After | Target |
+|--------|--------|-------|--------|
+| Statements | 50.69% | **90.51%** | >80% ✅ |
+| Branches | 67.83% | **75.36%** | - |
+| Functions | 73.63% | **83.91%** | - |
+| Lines | 70.30% | **90.04%** | - |
+
+**Test Statistics:**
+- Test Suites: 27 passed
+- Tests: 281 passed (53 new tests added)
+- All lint checks passing
+
+---
+
 ## [2026-02-03] Documentation - Challenge Completion Analysis
 **Summary:** Documented challenge compliance status, verified test coverage, and added future improvements roadmap.
 

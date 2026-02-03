@@ -112,6 +112,8 @@ npm run test:e2e
 npm run test:cov
 ```
 
+**Test Coverage:** 90.51% statement coverage (281 tests across 27 test suites)
+
 ### Database Migrations
 
 ```bash
