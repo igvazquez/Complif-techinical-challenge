@@ -6,6 +6,14 @@ This document provides guidance for AI assistants working on this codebase.
 
 Real-time rules engine for detecting suspicious financial transactions. Built with NestJS (TypeScript), PostgreSQL, Redis, and RabbitMQ.
 
+## Module-Specific Documentation
+
+Complex modules have their own CLAUDE.md files with detailed patterns:
+
+- `src/engine/CLAUDE.md` - Rule evaluation, custom operators, fact providers
+- `src/alerts/CLAUDE.md` - Action handlers, deduplication, event processing
+- `src/transactions/CLAUDE.md` - Ingestion flow, queue patterns
+
 ## Key Architectural Patterns
 
 ### Multi-Tenancy
@@ -104,24 +112,6 @@ export class ModuleController {
 - Always index `id_organization` for tenant tables
 - Composite indexes for common query patterns
 - Include indexes for foreign keys
-
-## Rule Engine
-
-### json-rules-engine Integration
-- Rules stored as JSON in `config` column
-- Custom operators in `src/engine/operators/`
-- Custom facts in `src/engine/facts/`
-
-### Adding New Operators
-1. Create operator in `src/engine/operators/`
-2. Register in `EngineService`
-3. Add JSON Schema validation
-4. Write unit tests
-
-### Adding New Facts
-1. Create fact provider in `src/engine/facts/`
-2. Register in `EngineModule`
-3. Document in ARCHITECTURE.md
 
 ## Error Handling
 
