@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { getLoggerToken } from 'nestjs-pino';
-import { TransactionsService } from './transactions.service';
+import { TransactionsService, ALERTS_SERVICE } from './transactions.service';
 import { Transaction } from './entities/transaction.entity';
 import { EngineService } from '../engine/engine.service';
 import { createMockTransaction, generateUUID } from '../../test/test-utils';
@@ -43,6 +43,10 @@ describe('TransactionsService', () => {
       inc: jest.fn(),
     };
 
+    const mockAlertClient = {
+      emit: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionsService,
@@ -61,6 +65,10 @@ describe('TransactionsService', () => {
         {
           provide: 'PROM_METRIC_TRANSACTIONS_PROCESSED_TOTAL',
           useValue: mockCounter,
+        },
+        {
+          provide: ALERTS_SERVICE,
+          useValue: mockAlertClient,
         },
       ],
     }).compile();
@@ -105,19 +113,19 @@ describe('TransactionsService', () => {
         amountNormalized: createDto.amountNormalized,
         currency: createDto.currency,
         type: createDto.type,
-        subType: null,
+        subType: undefined,
         datetime: expect.any(Date),
         date: createDto.date,
         isVoided: false,
         isBlocked: false,
         isDeleted: false,
-        origin: null,
-        deviceInfo: null,
+        origin: undefined,
+        deviceInfo: undefined,
         data: {},
-        externalCode: null,
-        country: null,
-        counterpartyId: null,
-        counterpartyCountry: null,
+        externalCode: undefined,
+        country: undefined,
+        counterpartyId: undefined,
+        counterpartyCountry: undefined,
       });
       expect(result.idOrganization).toBe(organizationId);
     });

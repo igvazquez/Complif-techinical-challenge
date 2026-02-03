@@ -1,20 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
+import { Repository, DeepPartial } from 'typeorm';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { makeCounterProvider, InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
 import { Transaction } from './entities/transaction.entity';
 import { CreateTransactionDto, TransactionResponseDto } from './dto';
 import { EngineService } from '../engine/engine.service';
-import { EvaluationContext } from '../engine/interfaces';
+import { EvaluationContext, RuleEvent } from '../engine/interfaces';
 import { PaginationQuery, PaginatedResult } from '../common/interfaces';
+import type { AlertEventMessage } from '../alerts/dto';
 
 export const transactionsProcessedCounterProvider = makeCounterProvider({
   name: 'transactions_processed_total',
   help: 'Total number of transactions processed',
   labelNames: ['organization_id', 'source', 'status'],
 });
+
+export const ALERTS_SERVICE = 'ALERTS_SERVICE';
 
 @Injectable()
 export class TransactionsService {
@@ -26,33 +30,36 @@ export class TransactionsService {
     private readonly logger: PinoLogger,
     @InjectMetric('transactions_processed_total')
     private readonly transactionsProcessed: Counter<string>,
+    @Inject(ALERTS_SERVICE)
+    private readonly alertClient: ClientProxy,
   ) {}
 
   async create(
     organizationId: string,
     createDto: CreateTransactionDto,
   ): Promise<Transaction> {
-    const transaction = this.transactionRepository.create({
+    const transactionData: DeepPartial<Transaction> = {
       idOrganization: organizationId,
       idAccount: createDto.idAccount,
       amount: createDto.amount,
       amountNormalized: createDto.amountNormalized,
       currency: createDto.currency,
       type: createDto.type,
-      subType: createDto.subType ?? null,
+      subType: createDto.subType,
       datetime: new Date(createDto.datetime),
       date: createDto.date,
       isVoided: createDto.isVoided ?? false,
       isBlocked: createDto.isBlocked ?? false,
       isDeleted: createDto.isDeleted ?? false,
-      origin: createDto.origin ?? null,
-      deviceInfo: createDto.deviceInfo ?? null,
+      origin: createDto.origin,
+      deviceInfo: createDto.deviceInfo,
       data: createDto.data ?? {},
-      externalCode: createDto.externalCode ?? null,
-      country: createDto.country ?? null,
-      counterpartyId: createDto.counterpartyId ?? null,
-      counterpartyCountry: createDto.counterpartyCountry ?? null,
-    });
+      externalCode: createDto.externalCode,
+      country: createDto.country,
+      counterpartyId: createDto.counterpartyId,
+      counterpartyCountry: createDto.counterpartyCountry,
+    };
+    const transaction = this.transactionRepository.create(transactionData);
 
     return this.transactionRepository.save(transaction);
   }
@@ -87,6 +94,15 @@ export class TransactionsService {
         organizationId,
         context,
       );
+
+      // Publish alert events for each triggered rule
+      if (evaluationResult.events.length > 0) {
+        this.publishAlertEvents(
+          organizationId,
+          transaction,
+          evaluationResult.events,
+        );
+      }
 
       this.transactionsProcessed.inc({
         organization_id: organizationId,
@@ -155,5 +171,38 @@ export class TransactionsService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  private publishAlertEvents(
+    organizationId: string,
+    transaction: Transaction,
+    events: RuleEvent[],
+  ): void {
+    for (const event of events) {
+      const alertMessage: AlertEventMessage = {
+        organizationId,
+        transactionId: transaction.id,
+        accountId: transaction.idAccount,
+        ruleId: event.params.ruleId,
+        ruleName: event.params.ruleName,
+        severity: (event.params.severity as string) || 'MEDIUM',
+        category: (event.params.category as string) || 'UNKNOWN',
+        eventType: event.type,
+        eventParams: event.params,
+        transactionDatetime: transaction.datetime.toISOString(),
+        ruleConfig: event.params.ruleConfig as Record<string, unknown>,
+      };
+
+      this.alertClient.emit('alerts', alertMessage);
+
+      this.logger.debug(
+        {
+          organizationId,
+          transactionId: transaction.id,
+          ruleId: event.params.ruleId,
+        },
+        'Alert event published',
+      );
+    }
   }
 }

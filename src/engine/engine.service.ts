@@ -140,20 +140,23 @@ export class EngineService implements OnModuleInit {
                   ruleId: rule.id,
                   ruleName: rule.name,
                   ...(event.params as Record<string, unknown>),
+                  ruleConfig: rule.config,
                 },
               });
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           // Fail-open: log error but don't block evaluation
+          const errorObj =
+            error instanceof Error ? error : new Error('Unknown error');
           this.logger.warn(
-            { error, ruleId: rule.id, ruleName: rule.name },
+            { err: errorObj, ruleId: rule.id, ruleName: rule.name },
             'Rule evaluation failed, continuing with next rule',
           );
           failedRules.push({
             ruleId: rule.id,
             ruleName: rule.name,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: errorObj.message,
           });
         }
       }
@@ -168,8 +171,10 @@ export class EngineService implements OnModuleInit {
       });
 
       return this.buildResult(events, failedRules, rules.length, startTime);
-    } catch (error) {
-      this.logger.error({ error, organizationId }, 'Evaluation failed');
+    } catch (error: unknown) {
+      const errorObj =
+        error instanceof Error ? error : new Error('Unknown error');
+      this.logger.error({ err: errorObj, organizationId }, 'Evaluation failed');
       this.evaluationTotal.inc({
         organization_id: organizationId,
         status: 'error',
@@ -224,6 +229,7 @@ export class EngineService implements OnModuleInit {
               ruleId: rule.id,
               ruleName: rule.name,
               ...(event.params as Record<string, unknown>),
+              ruleConfig: effectiveConfig,
             },
           });
         }
@@ -236,9 +242,11 @@ export class EngineService implements OnModuleInit {
       });
 
       return this.buildResult(events, failedRules, 1, startTime);
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorObj =
+        error instanceof Error ? error : new Error('Unknown error');
       this.logger.error(
-        { error, organizationId, ruleId },
+        { err: errorObj, organizationId, ruleId },
         'Single rule evaluation failed',
       );
       this.evaluationTotal.inc({
@@ -249,7 +257,7 @@ export class EngineService implements OnModuleInit {
       failedRules.push({
         ruleId,
         ruleName: 'Unknown',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorObj.message,
       });
 
       return this.buildResult(events, failedRules, 0, startTime);

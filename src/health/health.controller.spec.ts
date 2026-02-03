@@ -8,7 +8,6 @@ import {
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let healthCheckService: HealthCheckService;
 
   const mockHealthCheckService = {
     check: jest.fn(),
@@ -34,7 +33,6 @@ describe('HealthController', () => {
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
-    healthCheckService = module.get<HealthCheckService>(HealthCheckService);
   });
 
   afterEach(() => {

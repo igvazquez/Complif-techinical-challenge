@@ -11,13 +11,29 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const configService = app.get(ConfigService);
 
-  // Connect RabbitMQ microservice
-  const rabbitmqUrl = configService.get<string>('rabbitmq.url');
+  // Connect RabbitMQ microservices
+  const rabbitmqUrl =
+    configService.get<string>('rabbitmq.url') ?? 'amqp://localhost:5672';
+
+  // Transactions queue
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
       urls: [rabbitmqUrl],
       queue: 'transactions',
+      queueOptions: {
+        durable: true,
+      },
+      noAck: false,
+    },
+  });
+
+  // Alerts queue
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rabbitmqUrl],
+      queue: 'alerts',
       queueOptions: {
         durable: true,
       },
@@ -84,7 +100,9 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Swagger docs available at: http://localhost:${port}/api/docs`);
-  logger.log('RabbitMQ microservice connected to transactions queue');
+  logger.log(
+    'RabbitMQ microservices connected to transactions and alerts queues',
+  );
 }
 
-bootstrap();
+void bootstrap();

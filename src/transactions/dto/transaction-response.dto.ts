@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transaction } from '../entities/transaction.entity';
-import { EvaluationResult } from '../../engine/interfaces';
+import type { EvaluationResult } from '../../engine/interfaces';
 
 export class TransactionResponseDto {
   @ApiProperty({
