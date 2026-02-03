@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Counter, Trend } from 'k6/metrics';
-import { BASE_URL, defaultHeaders, generateTransaction, randomOrgId } from '../config.js';
+import { BASE_URL, defaultHeaders, generateTransaction, generateOrganization, randomOrgId } from '../config.js';
 
 // Custom metrics
 const errorRate = new Rate('error_rate');
@@ -37,11 +37,9 @@ export const options = {
 };
 
 export function setup() {
-  const orgRes = http.post(`${BASE_URL}/api/organizations`, JSON.stringify({
-    name: `Stress Test Org ${Date.now()}`,
-    code: `STRESS${Date.now()}`,
-    settings: {},
-  }), { headers: defaultHeaders });
+  const orgRes = http.post(`${BASE_URL}/api/organizations`, JSON.stringify(generateOrganization()), {
+    headers: defaultHeaders,
+  });
 
   const org = orgRes.status === 201 ? JSON.parse(orgRes.body) : { id: randomOrgId() };
 
@@ -50,20 +48,20 @@ export function setup() {
 
   for (const ruleType of ruleTypes) {
     // Create template
-    const templateRes = http.post(`${BASE_URL}/api/templates`, JSON.stringify({
-      name: `Stress Test ${ruleType} Rule`,
+    const templateRes = http.post(`${BASE_URL}/api/rule-templates`, JSON.stringify({
+      name: `Stress Test ${ruleType} Rule ${Date.now()}`,
       description: `${ruleType} rule for stress testing`,
-      ruleType: ruleType,
-      category: 'fraud',
-      severity: 'medium',
-      defaultConditions: {
-        all: [
-          { fact: 'amount', operator: 'greaterThan', value: 1000 }
-        ]
+      config: {
+        conditions: {
+          all: [
+            { fact: 'transaction.amount', operator: 'greaterThan', value: 1000 }
+          ]
+        },
+        event: {
+          type: 'alert',
+          params: { severity: 'MEDIUM', category: 'FRAUD' }
+        }
       },
-      defaultActions: [
-        { type: 'createAlert', params: { message: `${ruleType} alert` } }
-      ],
     }), { headers: defaultHeaders });
 
     if (templateRes.status === 201) {
@@ -72,9 +70,9 @@ export function setup() {
       // Create rule
       http.post(`${BASE_URL}/api/rules`, JSON.stringify({
         name: `Stress ${ruleType} Rule`,
-        templateId: template.id,
+        idTemplate: template.id,
         priority: 100,
-        isEnabled: true,
+        enabled: true,
       }), {
         headers: {
           ...defaultHeaders,

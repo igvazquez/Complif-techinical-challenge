@@ -20,24 +20,38 @@ export function randomOrgId() {
   });
 }
 
-// Generate a sample transaction payload
+// Generate a sample transaction payload matching CreateTransactionDto
 export function generateTransaction(orgId) {
-  const types = ['deposit', 'withdrawal', 'transfer', 'payment'];
+  const types = ['CASH_IN', 'CASH_OUT', 'TRANSFER', 'PAYMENT'];
   const currencies = ['USD', 'EUR', 'GBP', 'BRL'];
   const countries = ['US', 'BR', 'GB', 'DE', 'FR'];
 
+  const now = new Date();
+  const amount = Math.floor(Math.random() * 10000) + 100;
+
   return {
-    externalId: `tx-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-    type: types[Math.floor(Math.random() * types.length)],
-    amount: Math.floor(Math.random() * 10000) + 100,
+    idAccount: `acc-${Math.floor(Math.random() * 500)}`,
+    amount: amount,
+    amountNormalized: amount, // Required field
     currency: currencies[Math.floor(Math.random() * currencies.length)],
-    customerId: `cust-${Math.floor(Math.random() * 1000)}`,
-    accountId: `acc-${Math.floor(Math.random() * 500)}`,
-    metadata: {
-      ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      country: countries[Math.floor(Math.random() * countries.length)],
-      channel: 'web',
-      timestamp: new Date().toISOString(),
+    type: types[Math.floor(Math.random() * types.length)],
+    datetime: now.toISOString(), // Required: ISO 8601
+    date: now.toISOString().split('T')[0], // Required: YYYY-MM-DD
+    country: countries[Math.floor(Math.random() * countries.length)],
+    origin: 'BENCHMARK',
+    data: {
+      channel: 'api',
+      benchmarkRun: Date.now(),
+    },
+  };
+}
+
+// Generate organization payload matching CreateOrganizationDto
+export function generateOrganization() {
+  return {
+    name: `Benchmark Org ${Date.now()}`,
+    settings: {
+      benchmarkRun: true,
     },
   };
 }

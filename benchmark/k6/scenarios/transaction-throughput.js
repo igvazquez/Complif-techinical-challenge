@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
-import { BASE_URL, defaultHeaders, generateTransaction, randomOrgId } from '../config.js';
+import { BASE_URL, defaultHeaders, generateTransaction, generateOrganization, randomOrgId } from '../config.js';
 
 // Custom metrics
 const transactionErrors = new Rate('transaction_errors');
@@ -27,11 +27,7 @@ export const options = {
 
 // Setup: Create an organization for testing
 export function setup() {
-  const orgPayload = JSON.stringify({
-    name: `Benchmark Org ${Date.now()}`,
-    code: `BENCH${Date.now()}`,
-    settings: {},
-  });
+  const orgPayload = JSON.stringify(generateOrganization());
 
   const res = http.post(`${BASE_URL}/api/organizations`, orgPayload, {
     headers: defaultHeaders,
@@ -59,10 +55,10 @@ export default function(data) {
 
   const success = check(res, {
     'status is 201': (r) => r.status === 201,
-    'response has id': (r) => {
+    'response has transaction id': (r) => {
       try {
         const body = JSON.parse(r.body);
-        return body.id !== undefined;
+        return body.transaction && body.transaction.id !== undefined;
       } catch {
         return false;
       }

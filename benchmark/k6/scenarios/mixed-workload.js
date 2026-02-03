@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Rate } from 'k6/metrics';
-import { BASE_URL, defaultHeaders, generateTransaction, randomOrgId } from '../config.js';
+import { BASE_URL, defaultHeaders, generateTransaction, generateOrganization, randomOrgId } from '../config.js';
 
 const errorRate = new Rate('errors');
 
@@ -28,29 +28,27 @@ export const options = {
 
 export function setup() {
   // Create organization
-  const orgRes = http.post(`${BASE_URL}/api/organizations`, JSON.stringify({
-    name: `Mixed Workload Org ${Date.now()}`,
-    code: `MIX${Date.now()}`,
-    settings: {},
-  }), { headers: defaultHeaders });
+  const orgRes = http.post(`${BASE_URL}/api/organizations`, JSON.stringify(generateOrganization()), {
+    headers: defaultHeaders,
+  });
 
   const org = orgRes.status === 201 ? JSON.parse(orgRes.body) : { id: randomOrgId() };
 
   // Create a rule template
-  const templateRes = http.post(`${BASE_URL}/api/templates`, JSON.stringify({
-    name: 'Benchmark Amount Rule',
+  const templateRes = http.post(`${BASE_URL}/api/rule-templates`, JSON.stringify({
+    name: `Benchmark Amount Rule ${Date.now()}`,
     description: 'Rule for benchmark testing',
-    ruleType: 'amount',
-    category: 'fraud',
-    severity: 'high',
-    defaultConditions: {
-      all: [
-        { fact: 'amount', operator: 'greaterThan', value: 5000 }
-      ]
+    config: {
+      conditions: {
+        all: [
+          { fact: 'transaction.amount', operator: 'greaterThan', value: 5000 }
+        ]
+      },
+      event: {
+        type: 'alert',
+        params: { severity: 'HIGH', category: 'FRAUD' }
+      }
     },
-    defaultActions: [
-      { type: 'createAlert', params: { message: 'High amount transaction' } }
-    ],
   }), { headers: defaultHeaders });
 
   const template = templateRes.status === 201 ? JSON.parse(templateRes.body) : null;
@@ -60,9 +58,9 @@ export function setup() {
   if (template) {
     const ruleRes = http.post(`${BASE_URL}/api/rules`, JSON.stringify({
       name: 'Benchmark Rule',
-      templateId: template.id,
+      idTemplate: template.id,
       priority: 100,
-      isEnabled: true,
+      enabled: true,
     }), {
       headers: {
         ...defaultHeaders,
