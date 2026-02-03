@@ -3,7 +3,7 @@ import { Request } from 'express';
 
 export const ORGANIZATION_HEADER = 'x-organization-id';
 
-interface RequestWithOrganization extends Request {
+export interface RequestWithOrganization extends Request {
   organizationId?: string;
 }
 

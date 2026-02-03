@@ -6,11 +6,10 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { validate as isValidUUID } from 'uuid';
-import { ORGANIZATION_HEADER } from '../decorators/organization.decorator';
-
-interface RequestWithOrganization extends Request {
-  organizationId?: string;
-}
+import {
+  ORGANIZATION_HEADER,
+  RequestWithOrganization,
+} from '../decorators/organization.decorator';
 
 @Injectable()
 export class OrganizationGuard implements CanActivate {
