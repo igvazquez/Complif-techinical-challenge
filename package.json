@@ -21,7 +21,12 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts"
+    "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
+    "benchmark": "k6 run benchmark/k6/scenarios/transaction-throughput.js",
+    "benchmark:mixed": "k6 run benchmark/k6/scenarios/mixed-workload.js",
+    "benchmark:stress": "k6 run benchmark/k6/scenarios/stress-test.js",
+    "benchmark:docker": "docker run --rm -i --network=host grafana/k6 run - < benchmark/k6/scenarios/transaction-throughput.js",
+    "postman:generate": "npx openapi-to-postmanv2 -s http://localhost:3000/api/docs-json -o postman/rules-engine.postman_collection.json -p"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

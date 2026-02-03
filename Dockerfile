@@ -11,6 +11,7 @@ COPY . .
 
 # Development stage
 FROM base AS development
+RUN apk add --no-cache curl
 CMD ["npm", "run", "start:dev"]
 
 # Build stage

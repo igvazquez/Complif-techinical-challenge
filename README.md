@@ -158,9 +158,98 @@ npm run migration:revert
 - `GET /health` - Health check
 - `GET /metrics` - Prometheus metrics
 
+## Observability
+
+### Prometheus & Grafana
+
+The full Docker Compose stack includes Prometheus and Grafana for monitoring:
+
+```bash
+# Start full stack with monitoring
+docker-compose up -d
+
+# Access points:
+# - Application: http://localhost:3000
+# - Prometheus: http://localhost:9090
+# - Grafana: http://localhost:3001 (admin/admin)
+```
+
+### Available Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `transactions_processed_total` | Counter | Total transactions processed |
+| `rule_evaluation_duration_seconds` | Histogram | Rule evaluation latency |
+| `rule_evaluation_total` | Counter | Rule evaluations by status |
+| `rules_evaluated_total` | Counter | Individual rules evaluated |
+| `rule_cache_total` | Counter | Cache hits/misses |
+| `alerts_created_total` | Counter | Alerts created by severity |
+| `alerts_deduplicated_total` | Counter | Deduplicated alerts |
+| `alert_action_duration_seconds` | Histogram | Alert action execution time |
+
+### Grafana Dashboard
+
+The "Rules Engine Overview" dashboard provides:
+- KPIs: Transactions/sec, p99 latency, cache hit ratio, error rate
+- Transaction processing trends
+- Rule evaluation latency percentiles
+- Cache performance
+- Alert metrics by severity and category
+- System health (memory, HTTP latency)
+
+## Performance Benchmarks
+
+### Running Benchmarks
+
+Requires [k6](https://k6.io/docs/getting-started/installation/) installed:
+
+```bash
+# Install k6 (macOS)
+brew install k6
+
+# Transaction throughput test (50 req/s for 2 min)
+npm run benchmark
+
+# Mixed workload test (realistic API usage)
+npm run benchmark:mixed
+
+# Stress test (find breaking point)
+npm run benchmark:stress
+
+# Run with Docker (no local k6 needed)
+npm run benchmark:docker
+```
+
+### Performance Targets
+
+| Metric | Target | Critical |
+|--------|--------|----------|
+| Throughput | 50+ tx/sec | 25 tx/sec |
+| p99 Latency | < 100ms | < 500ms |
+| Error Rate | < 1% | < 5% |
+
+See [benchmark/README.md](./benchmark/README.md) for detailed benchmark documentation.
+
+## Postman Collection
+
+Import the Postman collection for manual API testing:
+
+1. Import `postman/rules-engine.postman_collection.json`
+2. Import `postman/rules-engine.postman_environment.json`
+3. Select "Rules Engine - Local" environment
+
+Generate collection from OpenAPI spec:
+```bash
+npm run postman:generate
+```
+
 ## Architecture
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation and ADRs.
+
+## Verification
+
+For end-to-end verification of all components, see [docs/E2E_VERIFICATION.md](./docs/E2E_VERIFICATION.md).
 
 ## License
 

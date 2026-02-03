@@ -1,0 +1,717 @@
+{
+  "info": {
+    "_postman_id": "rules-engine-api",
+    "name": "Rules Engine API",
+    "description": "API collection for the Rules Engine - a real-time configurable rules engine for detecting suspicious transactions.\n\nGenerate from OpenAPI spec: `npm run postman:generate`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Prometheus Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/metrics",
+              "host": ["{{baseUrl}}"],
+              "path": ["metrics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "Create Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('organizationId', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Organization\",\n  \"settings\": {\n    \"alertEmail\": \"alerts@example.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organizations"]
+            }
+          }
+        },
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organizations"]
+            }
+          }
+        },
+        {
+          "name": "Get Organization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organizations", "{{organizationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Organization\",\n  \"settings\": {\n    \"alertEmail\": \"updated@example.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organizations", "{{organizationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Organization",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "organizations", "{{organizationId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rule Templates",
+      "item": [
+        {
+          "name": "Create Rule Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('templateId', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"High Amount Transaction\",\n  \"description\": \"Triggers when transaction amount exceeds threshold\",\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 10000\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"FRAUD\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rule-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rule-templates"]
+            }
+          }
+        },
+        {
+          "name": "List Rule Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rule-templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rule-templates"]
+            }
+          }
+        },
+        {
+          "name": "Get Rule Template",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rule-templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rule-templates", "{{templateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Rule Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\",\n  \"config\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 15000\n        }\n      ]\n    },\n    \"event\": {\n      \"type\": \"alert\",\n      \"params\": {\n        \"severity\": \"HIGH\",\n        \"category\": \"FRAUD\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rule-templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rule-templates", "{{templateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Template Override",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idTemplate\": \"{{templateId}}\",\n  \"overrides\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 5000\n        }\n      ]\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/template-overrides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "template-overrides"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rules",
+      "item": [
+        {
+          "name": "Create Rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('ruleId', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Organization High Amount Rule\",\n  \"idTemplate\": \"{{templateId}}\",\n  \"priority\": 100,\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules"]
+            }
+          }
+        },
+        {
+          "name": "List Rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules"]
+            }
+          }
+        },
+        {
+          "name": "Get Rule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rules/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules", "{{ruleId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Rule Effective Config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rules/{{ruleId}}/effective-config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules", "{{ruleId}}", "effective-config"]
+            }
+          }
+        },
+        {
+          "name": "Update Rule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Rule Name\",\n  \"priority\": 200\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rules/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules", "{{ruleId}}"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Rule (Disable)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rules/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules", "{{ruleId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Rule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rules/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules", "{{ruleId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Evaluate Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('transactionId', response.transaction.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idAccount\": \"acc-12345\",\n  \"amount\": 15000,\n  \"amountNormalized\": 15000,\n  \"currency\": \"USD\",\n  \"type\": \"TRANSFER\",\n  \"datetime\": \"2024-01-15T10:30:00Z\",\n  \"date\": \"2024-01-15\",\n  \"country\": \"US\",\n  \"data\": {\n    \"channel\": \"web\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "{{transactionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alerts",
+      "item": [
+        {
+          "name": "List Alerts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.environment.set('alertId', response.data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Alert",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts", "{{alertId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Alert Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACKNOWLEDGED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts", "{{alertId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lists",
+      "item": [
+        {
+          "name": "Add List Entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('listEntryId', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listType\": \"BLACKLIST\",\n  \"entityType\": \"ACCOUNT\",\n  \"entityValue\": \"blocked-account-123\",\n  \"reason\": \"Suspicious activity detected\",\n  \"expiresAt\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/lists",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lists"]
+            }
+          }
+        },
+        {
+          "name": "List Entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/lists?listType=BLACKLIST&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lists"],
+              "query": [
+                {
+                  "key": "listType",
+                  "value": "BLACKLIST"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get List Entry",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/lists/{{listEntryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lists", "{{listEntryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete List Entry",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/lists/{{listEntryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lists", "{{listEntryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Engine",
+      "item": [
+        {
+          "name": "Evaluate Context",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction\": {\n    \"id\": \"tx-123\",\n    \"idAccount\": \"acc-456\",\n    \"amount\": 5000,\n    \"amountNormalized\": 5000,\n    \"currency\": \"USD\",\n    \"type\": \"TRANSFER\",\n    \"datetime\": \"2024-01-15T10:30:00Z\",\n    \"date\": \"2024-01-15\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/engine/evaluate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "engine", "evaluate"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
