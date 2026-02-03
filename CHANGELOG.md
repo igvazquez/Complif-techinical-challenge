@@ -46,6 +46,111 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-02-03] Phase 8 - Observability and Final Polish
+**Summary:** Complete observability infrastructure with Prometheus, Grafana dashboards, k6 performance benchmarks, and Postman collection for API testing.
+
+**Changes:**
+- Added Prometheus service (v2.50.1) with scrape configuration for metrics collection
+- Added Grafana service (v10.3.3) with auto-provisioned datasources and dashboards
+- Created comprehensive "Rules Engine Overview" dashboard with 7 rows and 18 panels covering KPIs, transactions, rules, cache, alerts, and system health
+- Implemented k6 benchmark scripts: transaction throughput (50 req/s), mixed workload (70/15/10/5 split), stress test (ramp to 200 req/s)
+- Added complete Postman collection with all API endpoints and correct DTOs
+- Added health checks and resource limits to Docker Compose services
+
+**Files Added:**
+- `docker/prometheus/prometheus.yml` - Scrape configuration
+- `docker/grafana/provisioning/` - Datasource and dashboard provisioning
+- `docker/grafana/dashboards/rules-engine-overview.json` - Full dashboard definition (1000+ lines)
+- `benchmark/k6/scenarios/transaction-throughput.js` - Throughput benchmark
+- `benchmark/k6/scenarios/mixed-workload.js` - Mixed workload benchmark
+- `benchmark/k6/scenarios/stress-test.js` - Stress test benchmark
+- `postman/rules-engine.postman_collection.json` - API collection
+- `docs/E2E_VERIFICATION.md` - Step-by-step verification checklist
+
+**Files Modified:**
+- `docker-compose.yml` - Added Prometheus, Grafana services with health checks
+- `README.md` - Added Observability and Performance Benchmarks sections
+- `IMPLEMENTATION_PLAN.md` - Phase 8 marked complete
+
+**Grafana Dashboard Panels:**
+- KPIs: transactions/sec, p99 latency, cache hit ratio, error rate
+- Transaction Processing: throughput, by-organization breakdown
+- Rule Evaluation: latency percentiles, status distribution
+- Cache Performance: hit/miss rate, hit ratio gauge
+- Alerts: by severity, by category, deduplication rate
+- System Health: memory, HTTP latency, Node.js handles
+
+**Benchmark Targets:**
+| Benchmark | Target | Metrics |
+|-----------|--------|---------|
+| Throughput | 50 req/s sustained | p99 < 100ms |
+| Mixed | 70% tx, 15% reads, 10% health, 5% lists | Error rate < 1% |
+| Stress | Ramp to 200 req/s | Find breaking point |
+
+---
+
+## [2026-02-03] Phase 7 - Lists Management
+**Summary:** Implemented blacklist/whitelist management module with full CRUD operations and integration with the rule engine for list-based lookups.
+
+**Changes:**
+- Created `ListEntry` entity with `ListType` (BLACKLIST/WHITELIST) and `EntityType` (ACCOUNT, IP, COUNTRY, DEVICE, EMAIL, PHONE) enums
+- Implemented `ListsService` with `isInList()` method for rule engine integration
+- Updated `ListLookupFact` to query actual list data instead of returning stubs
+- Added unique constraint to prevent duplicate entries per organization
+- Created REST API endpoints for list entry management
+
+**Files Added:**
+- `src/lists/entities/list-entry.entity.ts` - ListEntry entity with enums
+- `src/lists/dto/create-list-entry.dto.ts` - Creation DTO with validation
+- `src/lists/dto/list-entry-query.dto.ts` - Query filters for listing
+- `src/lists/lists.service.ts` - CRUD operations and isInList() lookup
+- `src/lists/lists.service.spec.ts` - 17 unit tests
+- `src/lists/lists.controller.ts` - REST endpoints
+- `src/lists/lists.module.ts` - Module definition
+- `src/lists/CLAUDE.md` - Module-specific documentation
+- `src/database/migrations/1738627200000-CreateListEntries.ts` - Migration with indexes
+- `test/lists.e2e-spec.ts` - E2E tests
+
+**Files Modified:**
+- `src/app.module.ts` - Registered ListsModule
+- `src/engine/engine.module.ts` - Added ListsModule import
+- `src/engine/facts/list-lookup.fact.ts` - Updated to use ListsService
+- `src/engine/interfaces/fact-provider.interface.ts` - Updated ListLookupParams interface
+
+**API Endpoints:**
+| Endpoint | Guard | Description |
+|----------|-------|-------------|
+| `POST /api/lists` | OrganizationGuard | Create list entry |
+| `GET /api/lists` | OrganizationGuard | List entries with filters |
+| `GET /api/lists/:id` | OrganizationGuard | Get entry by ID |
+| `DELETE /api/lists/:id` | OrganizationGuard | Delete entry |
+
+**List Lookup Rule Example:**
+```json
+{
+  "conditions": {
+    "all": [
+      {
+        "fact": "listLookup",
+        "params": {
+          "listType": "BLACKLIST",
+          "entityType": "COUNTRY",
+          "value": { "fact": "transaction", "path": "$.country" }
+        },
+        "operator": "equal",
+        "value": true
+      }
+    ]
+  }
+}
+```
+
+**Test Coverage:**
+- Unit tests: 17 new tests for ListsService
+- Total: 193 unit tests passing
+
+---
+
 ## [2026-02-03] Phase 6 - Alert System
 **Summary:** Implemented an event-driven alert system using RabbitMQ. When transactions trigger rules, alert events are published to a dedicated queue and processed asynchronously by the AlertsService with deduplication logic.
 
@@ -115,6 +220,73 @@ All notable changes to this project will be documented in this file.
 - Unit tests: 14 new tests for AlertsService
 - Total: 176 unit tests passing
 - Lint: 0 errors
+
+---
+
+## [2026-02-02] Phase 5 - Transaction Processing
+**Summary:** Implemented the Transactions module with storage, rule evaluation, RabbitMQ async processing, and replaced the TransactionHistoryFact stub with actual database queries.
+
+**Changes:**
+- Created Transaction entity with comprehensive fields (amounts, parties, metadata, location)
+- Implemented dual ingestion paths: REST API (sync) and RabbitMQ consumer (async)
+- Replaced `TransactionHistoryFact` stub with actual SQL aggregation queries
+- Added fail-open policy: evaluation errors don't block transaction storage
+- Created optimized database indexes for aggregation queries
+- Added Prometheus metrics for transaction processing
+
+**Files Added:**
+- `src/transactions/entities/transaction.entity.ts` - Transaction entity with all fields
+- `src/transactions/dto/create-transaction.dto.ts` - Validation DTOs with nested objects
+- `src/transactions/dto/transaction-response.dto.ts` - Response DTO
+- `src/transactions/transactions.service.ts` - CRUD and evaluation orchestration
+- `src/transactions/transactions.service.spec.ts` - Unit tests
+- `src/transactions/transactions.consumer.ts` - RabbitMQ message handler
+- `src/transactions/transactions.controller.ts` - REST endpoints
+- `src/transactions/transactions.module.ts` - Module definition
+- `src/database/migrations/1769900000000-CreateTransactions.ts` - Migration with indexes
+- `test/transactions.e2e-spec.ts` - 14 E2E tests
+
+**Files Modified:**
+- `src/app.module.ts` - Registered TransactionsModule
+- `src/main.ts` - Added RabbitMQ microservice for transactions queue
+- `src/engine/facts/transaction-history.fact.ts` - Replaced stub with SQL queries
+- `src/engine/facts/transaction-history.fact.spec.ts` - Updated tests
+- `ARCHITECTURE.md` - Added Transactions module documentation
+
+**API Endpoints:**
+| Endpoint | Guard | Description |
+|----------|-------|-------------|
+| `POST /api/transactions` | OrganizationGuard | Store and evaluate transaction |
+| `GET /api/transactions/:id` | OrganizationGuard | Get transaction by ID |
+| `GET /api/transactions` | OrganizationGuard | List transactions (paginated) |
+
+**Database Indexes:**
+- `idx_tx_org_account_datetime` - Primary aggregation queries
+- `idx_tx_org_datetime` - Organization-wide queries
+- `idx_tx_org_account_type_datetime` - Type-filtered aggregations
+
+**Prometheus Metrics:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `transactions_processed_total` | Counter | Transactions processed (by org, source, status) |
+
+**Transaction History Aggregations:**
+The fact provider now supports real database queries:
+```json
+{
+  "fact": "transactionHistory",
+  "params": {
+    "aggregation": "sum",
+    "field": "amountNormalized",
+    "timeWindowDays": 30,
+    "transactionType": "WITHDRAWAL"
+  }
+}
+```
+
+**Test Coverage:**
+- Unit tests: 162 passing
+- E2E tests: 14 new tests for transactions module
 
 ---
 
