@@ -4,42 +4,30 @@ import {
   FactProvider,
   ListLookupParams,
 } from '../interfaces/fact-provider.interface';
+import { ListsService } from '../../lists/lists.service';
+import { ListType, EntityType } from '../../lists/entities/list-entry.entity';
 
 @Injectable()
 export class ListLookupFact implements FactProvider<ListLookupParams, boolean> {
   readonly factId = 'listLookup';
 
-  calculate(
+  constructor(private readonly listsService: ListsService) {}
+
+  async calculate(
     params: ListLookupParams,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _almanac: Almanac,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _organizationId: string,
+    organizationId: string,
   ): Promise<boolean> {
-    // Stub implementation - returns false until Lists module is implemented in Phase 7
-    // TODO: Implement actual list lookup
-    //
-    // Expected behavior:
-    // - Query the specified list (blacklist, whitelist, etc.) for the organization
-    // - Return true if value is found in the list, false otherwise
-    //
-    // Example params:
-    // {
-    //   listName: 'sanctioned_countries',
-    //   value: 'IR'
-    // }
-    // or
-    // {
-    //   listName: 'blocked_accounts',
-    //   value: 'acc-123'
-    // }
+    const listType = params.listType as ListType;
+    const entityType = params.entityType as EntityType;
+    const { value } = params;
 
-    const { listName, value } = params;
-
-    // Log stub usage for debugging
-    void listName;
-    void value;
-
-    return Promise.resolve(false);
+    return this.listsService.isInList(
+      organizationId,
+      listType,
+      entityType,
+      value,
+    );
   }
 }

@@ -30,7 +30,19 @@ Facts are resolved dynamically during rule evaluation via the Almanac.
 |------|---------------|
 | `transactionHistory` | Historical aggregations (sum, count, avg over time window) |
 | `account` | Account context (balance, status, risk score) |
-| `listLookup` | Check membership in named lists |
+| `listLookup` | Check membership in blacklists/whitelists (via ListsService) |
+
+### listLookup Fact Parameters
+
+```typescript
+{
+  listType: 'BLACKLIST' | 'WHITELIST',
+  entityType: 'ACCOUNT' | 'IP' | 'COUNTRY' | 'DEVICE' | 'EMAIL' | 'PHONE',
+  value: string  // The value to check
+}
+```
+
+Returns `true` if the value is found in the specified list and not expired.
 
 ### Adding a New Fact
 1. Create provider in `facts/` implementing `FactProvider` interface

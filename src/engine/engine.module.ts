@@ -15,10 +15,11 @@ import { TransactionHistoryFact } from './facts/transaction-history.fact';
 import { AccountFact } from './facts/account.fact';
 import { ListLookupFact } from './facts/list-lookup.fact';
 import { RulesModule } from '../rules/rules.module';
+import { ListsModule } from '../lists/lists.module';
 import { Transaction } from '../transactions/entities/transaction.entity';
 
 @Module({
-  imports: [RulesModule, TypeOrmModule.forFeature([Transaction])],
+  imports: [RulesModule, ListsModule, TypeOrmModule.forFeature([Transaction])],
   controllers: [EngineController],
   providers: [
     EngineService,

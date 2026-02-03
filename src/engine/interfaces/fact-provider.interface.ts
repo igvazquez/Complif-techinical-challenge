@@ -19,7 +19,8 @@ export interface TransactionHistoryParams {
 }
 
 export interface ListLookupParams {
-  listName: string;
+  listType: 'BLACKLIST' | 'WHITELIST';
+  entityType: 'ACCOUNT' | 'IP' | 'COUNTRY' | 'DEVICE' | 'EMAIL' | 'PHONE';
   value: string;
 }
 
