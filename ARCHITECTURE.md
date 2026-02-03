@@ -571,7 +571,7 @@ Optimized for aggregation queries:
 | Node.js/NestJS TypeScript | ✅ Complete | NestJS 11 + strict TypeScript |
 | PostgreSQL | ✅ Complete | PostgreSQL 16 |
 | Redis cache | ✅ Complete | Redis 7 with 300s TTL |
-| Testing coverage >80% | ⚠️ 50.69% | See Test Coverage section below |
+| Testing coverage >80% | ✅ 90.51% | 281 tests, 27 test suites |
 | Docker for development | ✅ Complete | Full Docker Compose stack |
 
 #### Part 2: AI Workflow
@@ -606,27 +606,29 @@ Optimized for aggregation queries:
 
 ### Test Coverage Analysis
 
-**Current Coverage:** 50.69% statements, 44.08% branches, 53.63% functions, 50.83% lines
+**Current Coverage:** 90.51% statements, 75.36% branches, 83.91% functions, 90.04% lines
 
 | Module | Coverage | Notes |
 |--------|----------|-------|
-| Engine operators | 96.15% | Excellent - core logic well tested |
+| Engine operators | 96-100% | Excellent - core logic well tested |
 | Engine service | 84.67% | Good - main evaluation flow covered |
-| Entity classes | 81-100% | Good - domain models tested |
 | Services (core) | 100% | Excellent - business logic fully covered |
-| Controllers | 0% | Not unit tested (covered by E2E tests) |
-| DTOs | 0% | Validation-only classes, no logic |
-| Migrations | 0% | Schema definitions, not testable code |
+| Controllers | 100% | Excellent - all 8 controllers unit tested |
+| Consumers | 100% | Excellent - RabbitMQ handlers tested |
+| Common utilities | 100% | Guards and filters tested |
+| Entity classes | 88-100% | Good - domain models tested |
 
-**Why coverage appears low:**
-- Controllers are tested via E2E tests (145+ tests), not unit tests
-- DTOs are pure validation decorators with no testable logic
-- Database migrations are schema definitions
-- Module files are NestJS wiring with no business logic
+**Test Statistics:**
+- 27 test suites, 281 tests passing
+- Controllers: 53 new unit tests added
+- Consumers: 6 tests for message handling
+- Common utilities: 12 tests for guards/filters
 
-**Actual test coverage of business logic:** ~85%+ (services and operators)
-
-**Recommendation:** Add controller unit tests for edge cases if strict 80% metric compliance is required.
+**Jest Configuration:**
+Non-business-logic files excluded from coverage:
+- `main.ts`, `app.module.ts`, `*.module.ts` - Bootstrap/wiring
+- `index.ts` - Barrel exports
+- Database migrations and config files
 
 ---
 
@@ -705,13 +707,14 @@ Optimized for aggregation queries:
 
 ---
 
-#### 6. Test Coverage Improvement
-**Current Status:** 50.69% overall, ~85% business logic
+#### 6. Test Coverage ✅ Achieved
+**Current Status:** 90.51% statement coverage (target was >80%)
 
-**Recommendation:** To achieve 80% overall:
-1. Add controller unit tests (~20 tests per controller)
-2. Add integration tests for edge cases
-3. Consider excluding non-logic files from coverage metrics
+**Implementation:**
+- Added unit tests for all 8 controllers (53 tests)
+- Added unit tests for RabbitMQ consumers (6 tests)
+- Added unit tests for guards and filters (12 tests)
+- Configured Jest to exclude non-logic files from coverage
 
 ---
 
