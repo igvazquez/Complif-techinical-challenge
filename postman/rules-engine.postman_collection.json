@@ -100,7 +100,7 @@
         {
           "name": "Update Organization",
           "request": {
-            "method": "PUT",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
@@ -183,6 +183,18 @@
           }
         },
         {
+          "name": "Get Default Rule Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rule-templates/defaults",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rule-templates", "defaults"]
+            }
+          }
+        },
+        {
           "name": "Get Rule Template",
           "request": {
             "method": "GET",
@@ -197,7 +209,7 @@
         {
           "name": "Update Rule Template",
           "request": {
-            "method": "PUT",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
@@ -216,7 +228,38 @@
           }
         },
         {
+          "name": "Delete Rule Template",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rule-templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rule-templates", "{{templateId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Template Overrides",
+      "item": [
+        {
           "name": "Create Template Override",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('overrideId', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -237,6 +280,99 @@
               "raw": "{{baseUrl}}/api/template-overrides",
               "host": ["{{baseUrl}}"],
               "path": ["api", "template-overrides"]
+            }
+          }
+        },
+        {
+          "name": "List Template Overrides",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/template-overrides",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "template-overrides"]
+            }
+          }
+        },
+        {
+          "name": "Get Template Override",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/template-overrides/{{overrideId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "template-overrides", "{{overrideId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Merged Config for Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/template-overrides/template/{{templateId}}/merged-config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "template-overrides", "template", "{{templateId}}", "merged-config"]
+            }
+          }
+        },
+        {
+          "name": "Update Template Override",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"overrides\": {\n    \"conditions\": {\n      \"all\": [\n        {\n          \"fact\": \"transaction.amount\",\n          \"operator\": \"greaterThan\",\n          \"value\": 7500\n        }\n      ]\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/template-overrides/{{overrideId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "template-overrides", "{{overrideId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Template Override",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/template-overrides/{{overrideId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "template-overrides", "{{overrideId}}"]
             }
           }
         }
@@ -302,6 +438,23 @@
           }
         },
         {
+          "name": "Get Enabled Rules by Priority",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rules/enabled",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rules", "enabled"]
+            }
+          }
+        },
+        {
           "name": "Get Rule",
           "request": {
             "method": "GET",
@@ -338,7 +491,7 @@
         {
           "name": "Update Rule",
           "request": {
-            "method": "PUT",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
@@ -443,6 +596,33 @@
               "raw": "{{baseUrl}}/api/transactions",
               "host": ["{{baseUrl}}"],
               "path": ["api", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "List Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
             }
           }
         },
@@ -685,6 +865,31 @@
               "raw": "{{baseUrl}}/api/engine/evaluate",
               "host": ["{{baseUrl}}"],
               "path": ["api", "engine", "evaluate"]
+            }
+          }
+        },
+        {
+          "name": "Evaluate Against Specific Rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organizationId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction\": {\n    \"id\": \"tx-123\",\n    \"idAccount\": \"acc-456\",\n    \"amount\": 5000,\n    \"amountNormalized\": 5000,\n    \"currency\": \"USD\",\n    \"type\": \"TRANSFER\",\n    \"datetime\": \"2024-01-15T10:30:00Z\",\n    \"date\": \"2024-01-15\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/engine/evaluate/{{ruleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "engine", "evaluate", "{{ruleId}}"]
             }
           }
         }
