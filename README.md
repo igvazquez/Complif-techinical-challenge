@@ -32,16 +32,38 @@ See [ARCHITECTURE.md - Challenge Compliance](./ARCHITECTURE.md#challenge-complia
 
 ## Prerequisites
 
-- Node.js 20+
 - Docker and Docker Compose
-- npm
+- Node.js 20+ (only for local development)
 
-## Quick Start
+## Quick Start (Docker)
 
-1. **Clone and install dependencies**
+The fastest way to get the application running:
 
 ```bash
 cd rules-engine
+docker-compose up -d
+```
+
+This starts all services:
+- **Application**: http://localhost:3000
+- **Swagger API Docs**: http://localhost:3000/api/docs
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3001 (admin/admin)
+- **RabbitMQ Management**: http://localhost:15672 (rules_user/rules_password)
+
+To start only the core services (without monitoring):
+
+```bash
+docker-compose up -d postgres redis rabbitmq app
+```
+
+## Development Setup
+
+For local development with faster iteration:
+
+1. **Install dependencies**
+
+```bash
 npm install
 ```
 
@@ -66,12 +88,7 @@ npm run migration:run
 5. **Start the application**
 
 ```bash
-# Development
 npm run start:dev
-
-# Production
-npm run build
-npm run start:prod
 ```
 
 ## API Documentation
@@ -126,52 +143,6 @@ npm run migration:run
 # Revert migration
 npm run migration:revert
 ```
-
-## API Endpoints
-
-### Organizations
-- `POST /api/organizations` - Create organization
-- `GET /api/organizations` - List organizations
-- `GET /api/organizations/:id` - Get organization
-- `PUT /api/organizations/:id` - Update organization
-- `DELETE /api/organizations/:id` - Delete organization
-
-### Rules
-- `POST /api/rules` - Create rule
-- `GET /api/rules` - List rules (org-scoped)
-- `GET /api/rules/:id` - Get rule
-- `PUT /api/rules/:id` - Update rule
-- `PATCH /api/rules/:id` - Partial update
-- `DELETE /api/rules/:id` - Delete rule
-
-### Templates
-- `POST /api/templates` - Create template
-- `GET /api/templates` - List templates
-- `GET /api/templates/:id` - Get template
-- `PUT /api/templates/:id` - Update template (creates new version)
-- `GET /api/templates/:id/versions` - List template versions
-- `POST /api/templates/:id/overrides` - Create org override
-- `PUT /api/templates/:id/overrides` - Update org override
-- `DELETE /api/templates/:id/overrides` - Remove org override
-
-### Transactions
-- `POST /api/transactions` - Evaluate transaction
-- `GET /api/transactions/:id` - Get transaction
-
-### Alerts
-- `GET /api/alerts` - List alerts
-- `GET /api/alerts/:id` - Get alert
-- `PATCH /api/alerts/:id` - Update alert status
-
-### Lists
-- `POST /api/lists` - Add list entry
-- `GET /api/lists` - List entries
-- `GET /api/lists/:id` - Get entry
-- `DELETE /api/lists/:id` - Remove entry
-
-### Health & Metrics
-- `GET /health` - Health check
-- `GET /metrics` - Prometheus metrics
 
 ## Observability
 
@@ -245,15 +216,57 @@ npm run benchmark:docker
 
 See [benchmark/README.md](./benchmark/README.md) for detailed benchmark documentation.
 
-## Postman Collection
+## Postman Collections
 
-Import the Postman collection for manual API testing:
+Two Postman collections are included for API testing and exploration.
 
-1. Import `postman/rules-engine.postman_collection.json`
-2. Import `postman/rules-engine.postman_environment.json`
-3. Select "Rules Engine - Local" environment
+### API Collection
 
-Generate collection from OpenAPI spec:
+The main collection covers all API endpoints organized by resource.
+
+**Import:**
+1. Open Postman and click **Import**
+2. Import both files from the `postman/` directory:
+   - `rules-engine.postman_collection.json`
+   - `rules-engine.postman_environment.json`
+3. Select the **Rules Engine - Local** environment
+
+**Included Requests:**
+- **Health** - Health check and Prometheus metrics
+- **Organizations** - CRUD operations for tenants
+- **Rule Templates** - Global rule template management
+- **Template Overrides** - Organization-specific template customizations
+- **Rules** - Organization-scoped rule CRUD
+- **Lists** - Blacklist/whitelist entry management
+- **Transactions** - Transaction submission and evaluation
+- **Alerts** - Alert listing and status updates
+- **Engine** - Direct rule evaluation endpoints
+
+**Auto-Generated Variables:**
+
+The collection includes test scripts that automatically capture IDs (`organizationId`, `ruleTemplateId`, `ruleId`, `transactionId`, `alertId`), allowing you to run requests in sequence without manually copying IDs.
+
+### Interview Demo Collection
+
+A comprehensive demonstration collection showcasing all rule engine capabilities.
+
+**Import:**
+1. Import both files from `postman/interview_demo/`:
+   - `interview-demo.postman_collection.json`
+   - `interview-demo.postman_environment.json`
+2. Select the **Interview Demo** environment
+
+**Demonstrates:**
+- All rule types (Amount, Quantity, Velocity, Geolocation, Lists)
+- All aggregation operators (SUM, COUNT, AVG, MAX, MIN)
+- All logical operators (AND, OR, Nested, NOT)
+
+Each section includes rule creation, a test that triggers the rule, a test that does not trigger, and alert verification.
+
+### Regenerate API Collection
+
+To regenerate the API collection from the current OpenAPI spec:
+
 ```bash
 npm run postman:generate
 ```
