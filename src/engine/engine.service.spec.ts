@@ -131,9 +131,6 @@ describe('EngineService', () => {
     service = module.get<EngineService>(EngineService);
     rulesService = module.get(RulesService);
     ruleCacheService = module.get(RuleCacheService);
-
-    // Initialize the service
-    service.onModuleInit();
   });
 
   afterEach(() => {
