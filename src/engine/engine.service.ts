@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Engine, RuleProperties, EngineResult } from 'json-rules-engine';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import {
@@ -47,9 +47,7 @@ export const rulesEvaluatedCounterProvider = makeCounterProvider({
 });
 
 @Injectable()
-export class EngineService implements OnModuleInit {
-  private engine: Engine;
-
+export class EngineService {
   constructor(
     private readonly rulesService: RulesService,
     private readonly ruleCacheService: RuleCacheService,
@@ -64,21 +62,19 @@ export class EngineService implements OnModuleInit {
     private readonly evaluationTotal: Counter<string>,
     @InjectMetric('rules_evaluated_total')
     private readonly rulesEvaluated: Counter<string>,
-  ) {
-    this.engine = new Engine([], { allowUndefinedFacts: true });
-    registerAllOperators(this.engine);
-  }
+  ) {}
 
-  onModuleInit(): void {
-    this.registerFacts();
-    this.logger.info(
-      'Engine service initialized with custom operators and facts',
-    );
-  }
+  /**
+   * Creates a new engine instance with operators and facts pre-configured.
+   * Facts resolve organizationId from the Almanac at runtime.
+   * A new engine is created per evaluation to ensure concurrency safety.
+   */
+  private createConfiguredEngine(): Engine {
+    const engine = new Engine([], { allowUndefinedFacts: true });
+    registerAllOperators(engine);
 
-  private registerFacts(): void {
-    // Register dynamic facts that use providers
-    this.engine.addFact('transactionHistory', async (params, almanac) => {
+    // Register facts - organizationId is resolved from almanac at runtime
+    engine.addFact('transactionHistory', async (params, almanac) => {
       const organizationId = await almanac.factValue<string>('organizationId');
       return this.transactionHistoryFact.calculate(
         params as TransactionHistoryParams,
@@ -87,7 +83,7 @@ export class EngineService implements OnModuleInit {
       );
     });
 
-    this.engine.addFact('account', async (params, almanac) => {
+    engine.addFact('account', async (params, almanac) => {
       const organizationId = await almanac.factValue<string>('organizationId');
       return this.accountFact.calculate(
         params as AccountParams,
@@ -96,7 +92,7 @@ export class EngineService implements OnModuleInit {
       );
     });
 
-    this.engine.addFact('listLookup', async (params, almanac) => {
+    engine.addFact('listLookup', async (params, almanac) => {
       const organizationId = await almanac.factValue<string>('organizationId');
       return this.listLookupFact.calculate(
         params as ListLookupParams,
@@ -104,6 +100,8 @@ export class EngineService implements OnModuleInit {
         organizationId,
       );
     });
+
+    return engine;
   }
 
   async evaluate(
@@ -286,38 +284,20 @@ export class EngineService implements OnModuleInit {
       priority: rule.priority,
     };
 
-    // Create a temporary engine for this rule
-    const tempEngine = new Engine([], { allowUndefinedFacts: true });
-    registerAllOperators(tempEngine);
+    // Create engine with operators and facts pre-configured
+    const engine = this.createConfiguredEngine();
+    engine.addRule(ruleDefinition);
 
-    // Register facts on temp engine
-    tempEngine.addFact('transactionHistory', async (params, almanac) => {
-      return this.transactionHistoryFact.calculate(
-        params as TransactionHistoryParams,
-        almanac,
-        organizationId,
-      );
-    });
+    // Build facts from context - organizationId is used by fact providers via almanac
+    const facts = this.buildFactsFromContext(context, organizationId);
 
-    tempEngine.addFact('account', async (params, almanac) => {
-      return this.accountFact.calculate(
-        params as AccountParams,
-        almanac,
-        organizationId,
-      );
-    });
+    return engine.run(facts);
+  }
 
-    tempEngine.addFact('listLookup', async (params, almanac) => {
-      return this.listLookupFact.calculate(
-        params as ListLookupParams,
-        almanac,
-        organizationId,
-      );
-    });
-
-    tempEngine.addRule(ruleDefinition);
-
-    // Build facts from context
+  private buildFactsFromContext(
+    context: EvaluationContext,
+    organizationId: string,
+  ): Record<string, unknown> {
     const facts: Record<string, unknown> = {
       organizationId,
       context,
@@ -350,7 +330,7 @@ export class EngineService implements OnModuleInit {
       facts.metadata = context.metadata;
     }
 
-    return tempEngine.run(facts);
+    return facts;
   }
 
   private async getCachedRules(organizationId: string): Promise<CachedRules> {
