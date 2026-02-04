@@ -14,6 +14,7 @@ import {
   RULE_CACHE_INVALIDATION_EVENT,
   RuleCacheInvalidationEvent,
 } from '../common/events/rule-cache.events';
+import { deepMerge } from '../common/utils/deep-merge.util';
 
 @Injectable()
 export class TemplateOverridesService {
@@ -125,7 +126,7 @@ export class TemplateOverridesService {
     }
 
     // Deep merge template config with overrides
-    return this.deepMerge(template.config, override.overrides);
+    return deepMerge(template.config, override.overrides);
   }
 
   async update(
@@ -152,32 +153,5 @@ export class TemplateOverridesService {
       RULE_CACHE_INVALIDATION_EVENT,
       new RuleCacheInvalidationEvent(organizationId),
     );
-  }
-
-  private deepMerge(
-    target: Record<string, unknown>,
-    source: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const result = { ...target };
-
-    for (const key of Object.keys(source)) {
-      if (
-        source[key] !== null &&
-        typeof source[key] === 'object' &&
-        !Array.isArray(source[key]) &&
-        target[key] !== null &&
-        typeof target[key] === 'object' &&
-        !Array.isArray(target[key])
-      ) {
-        result[key] = this.deepMerge(
-          target[key] as Record<string, unknown>,
-          source[key] as Record<string, unknown>,
-        );
-      } else {
-        result[key] = source[key];
-      }
-    }
-
-    return result;
   }
 }
