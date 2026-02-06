@@ -46,7 +46,9 @@ export class ListLookupFact implements FactProvider<ListLookupParams, boolean> {
     );
   }
 
-  private isFactReference(value: string | FactReference): value is FactReference {
+  private isFactReference(
+    value: string | FactReference,
+  ): value is FactReference {
     return (
       typeof value === 'object' &&
       value !== null &&
