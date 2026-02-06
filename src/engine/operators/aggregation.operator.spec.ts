@@ -10,6 +10,7 @@ import {
   maxGreaterThanOrEqual,
   minLessThan,
   minLessThanOrEqual,
+  amountBetween,
 } from './aggregation.operator';
 
 describe('Aggregation Operators', () => {
@@ -186,6 +187,59 @@ describe('Aggregation Operators', () => {
     it('should handle decimal values', () => {
       expect(minLessThanOrEqual.cb(49.999, 50)).toBe(true);
       expect(minLessThanOrEqual.cb(50.001, 50)).toBe(false);
+    });
+  });
+
+  describe('amountBetween', () => {
+    it('should return true when factValue is within range', () => {
+      expect(amountBetween.cb(7500, { min: 5000, max: 10000 })).toBe(true);
+    });
+
+    it('should return true at exact boundaries', () => {
+      expect(amountBetween.cb(5000, { min: 5000, max: 10000 })).toBe(true);
+      expect(amountBetween.cb(10000, { min: 5000, max: 10000 })).toBe(true);
+    });
+
+    it('should return false when factValue is outside range', () => {
+      expect(amountBetween.cb(4999, { min: 5000, max: 10000 })).toBe(false);
+      expect(amountBetween.cb(10001, { min: 5000, max: 10000 })).toBe(false);
+    });
+
+    it('should return false for non-number factValue', () => {
+      expect(
+        amountBetween.cb('7500' as unknown as number, {
+          min: 5000,
+          max: 10000,
+        }),
+      ).toBe(false);
+      expect(
+        amountBetween.cb(null as unknown as number, {
+          min: 5000,
+          max: 10000,
+        }),
+      ).toBe(false);
+    });
+
+    it('should return false for invalid compareValue', () => {
+      expect(
+        amountBetween.cb(7500, null as unknown as { min: number; max: number }),
+      ).toBe(false);
+      expect(
+        amountBetween.cb(7500, { min: 5000 } as unknown as {
+          min: number;
+          max: number;
+        }),
+      ).toBe(false);
+      expect(
+        amountBetween.cb(7500, { max: 10000 } as unknown as {
+          min: number;
+          max: number;
+        }),
+      ).toBe(false);
+    });
+
+    it('should have correct operator name', () => {
+      expect(amountBetween.name).toBe('amountBetween');
     });
   });
 });

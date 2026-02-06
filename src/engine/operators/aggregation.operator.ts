@@ -100,6 +100,21 @@ export const minLessThanOrEqual = new Operator(
   },
 );
 
+export const amountBetween = new Operator(
+  'amountBetween',
+  (factValue: number, compareValue: { min: number; max: number }): boolean => {
+    if (
+      typeof factValue !== 'number' ||
+      !compareValue ||
+      typeof compareValue.min !== 'number' ||
+      typeof compareValue.max !== 'number'
+    ) {
+      return false;
+    }
+    return factValue >= compareValue.min && factValue <= compareValue.max;
+  },
+);
+
 export const aggregationOperators = [
   sumGreaterThan,
   sumGreaterThanOrEqual,
@@ -111,4 +126,5 @@ export const aggregationOperators = [
   maxGreaterThanOrEqual,
   minLessThan,
   minLessThanOrEqual,
+  amountBetween,
 ];
