@@ -285,6 +285,91 @@ describe('TransactionsService', () => {
     });
   });
 
+  describe('update', () => {
+    it('should update isBlocked', async () => {
+      const transaction = {
+        ...mockTransaction,
+        isBlocked: false,
+        isVoided: false,
+      };
+
+      repository.findOne.mockResolvedValue(transaction as Transaction);
+      repository.save.mockResolvedValue({
+        ...transaction,
+        isBlocked: true,
+      } as Transaction);
+
+      const result = await service.update(organizationId, transaction.id, {
+        isBlocked: true,
+      });
+
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: transaction.id, idOrganization: organizationId },
+      });
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ isBlocked: true }),
+      );
+      expect(result.isBlocked).toBe(true);
+    });
+
+    it('should update isVoided', async () => {
+      const transaction = {
+        ...mockTransaction,
+        isBlocked: false,
+        isVoided: false,
+      };
+
+      repository.findOne.mockResolvedValue(transaction as Transaction);
+      repository.save.mockResolvedValue({
+        ...transaction,
+        isVoided: true,
+      } as Transaction);
+
+      const result = await service.update(organizationId, transaction.id, {
+        isVoided: true,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ isVoided: true }),
+      );
+      expect(result.isVoided).toBe(true);
+    });
+
+    it('should update both isBlocked and isVoided', async () => {
+      const transaction = {
+        ...mockTransaction,
+        isBlocked: false,
+        isVoided: false,
+      };
+
+      repository.findOne.mockResolvedValue(transaction as Transaction);
+      repository.save.mockResolvedValue({
+        ...transaction,
+        isBlocked: true,
+        isVoided: true,
+      } as Transaction);
+
+      const result = await service.update(organizationId, transaction.id, {
+        isBlocked: true,
+        isVoided: true,
+      });
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ isBlocked: true, isVoided: true }),
+      );
+      expect(result.isBlocked).toBe(true);
+      expect(result.isVoided).toBe(true);
+    });
+
+    it('should throw NotFoundException if transaction not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.update(organizationId, 'non-existent-id', { isBlocked: true }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('findByOrganization', () => {
     it('should return paginated transactions', async () => {
       const transactions = [mockTransaction];
