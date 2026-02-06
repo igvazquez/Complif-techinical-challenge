@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
-import { CreateTransactionDto, TransactionResponseDto } from './dto';
+import {
+  CreateTransactionDto,
+  UpdateTransactionDto,
+  TransactionResponseDto,
+} from './dto';
 import { Transaction } from './entities/transaction.entity';
 import { PaginationQueryDto } from '../common/dto';
 
@@ -40,6 +44,7 @@ describe('TransactionsController', () => {
     createAndEvaluate: jest.fn(),
     findByOrganization: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -166,6 +171,53 @@ describe('TransactionsController', () => {
       expect(mockTransactionsService.findOne).toHaveBeenCalledWith(
         organizationId,
         id,
+      );
+    });
+  });
+
+  describe('patch', () => {
+    it('should partially update a transaction', async () => {
+      const organizationId = 'org-123';
+      const id = '123e4567-e89b-12d3-a456-426614174000';
+      const updateDto: UpdateTransactionDto = { isBlocked: true };
+      const updatedTransaction = { ...mockTransaction, isBlocked: true };
+
+      mockTransactionsService.update.mockResolvedValue(updatedTransaction);
+
+      const result = await controller.patch(organizationId, id, updateDto);
+
+      expect(result).toEqual(updatedTransaction);
+      expect(mockTransactionsService.update).toHaveBeenCalledWith(
+        organizationId,
+        id,
+        updateDto,
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('should update a transaction', async () => {
+      const organizationId = 'org-123';
+      const id = '123e4567-e89b-12d3-a456-426614174000';
+      const updateDto: UpdateTransactionDto = {
+        isBlocked: true,
+        isVoided: false,
+      };
+      const updatedTransaction = {
+        ...mockTransaction,
+        isBlocked: true,
+        isVoided: false,
+      };
+
+      mockTransactionsService.update.mockResolvedValue(updatedTransaction);
+
+      const result = await controller.update(organizationId, id, updateDto);
+
+      expect(result).toEqual(updatedTransaction);
+      expect(mockTransactionsService.update).toHaveBeenCalledWith(
+        organizationId,
+        id,
+        updateDto,
       );
     });
   });

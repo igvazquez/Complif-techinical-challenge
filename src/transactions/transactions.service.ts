@@ -6,7 +6,11 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { makeCounterProvider, InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
 import { Transaction } from './entities/transaction.entity';
-import { CreateTransactionDto, TransactionResponseDto } from './dto';
+import {
+  CreateTransactionDto,
+  UpdateTransactionDto,
+  TransactionResponseDto,
+} from './dto';
 import { EngineService } from '../engine/engine.service';
 import { EvaluationContext, RuleEvent } from '../engine/interfaces';
 import { PaginationQuery, PaginatedResult } from '../common/interfaces';
@@ -147,6 +151,23 @@ export class TransactionsService {
     }
 
     return transaction;
+  }
+
+  async update(
+    organizationId: string,
+    id: string,
+    updateDto: UpdateTransactionDto,
+  ): Promise<Transaction> {
+    const transaction = await this.findOne(organizationId, id);
+
+    if (updateDto.isBlocked !== undefined) {
+      transaction.isBlocked = updateDto.isBlocked;
+    }
+    if (updateDto.isVoided !== undefined) {
+      transaction.isVoided = updateDto.isVoided;
+    }
+
+    return this.transactionRepository.save(transaction);
   }
 
   async findByOrganization(

@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Put,
   Body,
   Param,
   Query,
@@ -16,7 +18,11 @@ import {
   ApiHeader,
 } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
-import { CreateTransactionDto, TransactionResponseDto } from './dto';
+import {
+  CreateTransactionDto,
+  UpdateTransactionDto,
+  TransactionResponseDto,
+} from './dto';
 import { Transaction } from './entities/transaction.entity';
 import { PaginationQueryDto } from '../common/dto';
 import { OrganizationGuard } from '../common/guards/organization.guard';
@@ -80,5 +86,41 @@ export class TransactionsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<Transaction> {
     return this.transactionsService.findOne(organizationId, id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Partially update a transaction (isBlocked, isVoided)',
+  })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction updated',
+    type: Transaction,
+  })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  patch(
+    @OrganizationId() organizationId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateTransactionDto,
+  ): Promise<Transaction> {
+    return this.transactionsService.update(organizationId, id, updateDto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update a transaction (isBlocked, isVoided)' })
+  @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction updated',
+    type: Transaction,
+  })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  update(
+    @OrganizationId() organizationId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateTransactionDto,
+  ): Promise<Transaction> {
+    return this.transactionsService.update(organizationId, id, updateDto);
   }
 }
