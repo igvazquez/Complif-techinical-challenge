@@ -121,15 +121,19 @@ export class EngineService {
         return this.buildResult(events, failedRules, 0, startTime);
       }
 
-      // Evaluate each rule
-      for (const rule of rules) {
-        try {
-          const result = await this.evaluateSingleRule(
-            rule,
-            context,
-            organizationId,
-          );
+      // Evaluate all rules in parallel
+      const settledResults = await Promise.allSettled(
+        rules.map((rule) =>
+          this.evaluateSingleRule(rule, context, organizationId).then(
+            (result) => ({ rule, result }),
+          ),
+        ),
+      );
 
+      for (let i = 0; i < settledResults.length; i++) {
+        const settled = settledResults[i];
+        if (settled.status === 'fulfilled') {
+          const { rule, result } = settled.value;
           if (result.events.length > 0) {
             for (const event of result.events) {
               events.push({
@@ -143,7 +147,9 @@ export class EngineService {
               });
             }
           }
-        } catch (error: unknown) {
+        } else {
+          const rule = rules[i];
+          const error: unknown = settled.reason;
           // Fail-open: log error but don't block evaluation
           const errorObj =
             error instanceof Error ? error : new Error('Unknown error');
